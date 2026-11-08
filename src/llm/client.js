@@ -24,6 +24,8 @@ export function createLlm(opts = {}) {
   const fetchImpl = opts.fetchImpl ?? globalThis.fetch
   const timeoutMs = Number(opts.timeoutMs ?? 60_000)
   const maxRetries = Number(opts.maxRetries ?? 2)
+  // 推理强度：low / medium / high。模型不支持时由 API 决定是否忽略。
+  const reasoningEffort = opts.reasoningEffort ?? process.env.DEEPSEEK_REASONING_EFFORT ?? null
 
   async function chat(messages, { temperature = 0, signal, retries = maxRetries } = {}) {
     if (!apiKey) throw new LlmError('没有 API key：设置 DEEPSEEK_API_KEY 环境变量，或显式传入 apiKey')
@@ -43,7 +45,7 @@ export function createLlm(opts = {}) {
             'content-type': 'application/json',
             authorization: 'Bearer ' + apiKey
           },
-          body: JSON.stringify({ model, messages, temperature, stream: false }),
+          body: JSON.stringify({ model, messages, temperature, stream: false, ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}) }),
           signal: ac.signal
         })
         if (!res.ok) {
@@ -74,7 +76,7 @@ export function createLlm(opts = {}) {
 
   return {
     chat,
-    config: { model, baseUrl, hasKey: Boolean(apiKey), timeoutMs, maxRetries }
+    config: { model, baseUrl, hasKey: Boolean(apiKey), timeoutMs, maxRetries, reasoningEffort }
   }
 }
 
