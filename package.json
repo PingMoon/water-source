@@ -6,8 +6,9 @@
   "description": "水源 · 从事件流里长出来的人格内核（账本 / 派生 / 归并 / 准入 / skill）",
   "main": "src/plugin/index.js",
   "scripts": {
-    "test": "node --test",
-    "test:one": "node --test tests/event-store.test.js"
+    "test": "node --test tests/*.test.js",
+    "test:one": "node --test tests/event-store.test.js",
+    "real-run": "node scripts/real-run.mjs"
   },
   "engines": {
     "node": ">=22"

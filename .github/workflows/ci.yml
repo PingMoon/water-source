@@ -19,6 +19,6 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: 跑全部测试
-        run: node --test
+        run: node --test tests/*.test.js
       - name: 冒烟
         run: node scripts/smoke.mjs
