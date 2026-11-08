@@ -1,11 +1,3 @@
-fix(store,plugin): 首次启动建不了数据目录
+test(store): 补「自动建目录」与「父路径是文件」两条
 
-两个 bug 叠在一起，在 DSH 里表现为「插件装了但完全没反应」：
-1. openDatabase 不建父目录 —— ~/.whale 不存在时直接 unable to open database file；
-2. 修第 1 个时把参数名 path 遮住了模块 path，path.dirname 不是函数。
-
-而 apply 把启动失败 catch 掉了，只在宿主 logger 留一行——宿主那边收不到，等于静默。
-现在失败会同时写 ~/.dsh/whale-boot-error.log。
-
-测试里用 mkdtempSync 建了临时目录，所以两条都没暴露；
-这次是用 Electron 自己的 Node 模拟 apply 才打出来的。
+前者守住 DSH 里首次启动不静默失败，后者守住「路径真的不可用时启动就炸」。

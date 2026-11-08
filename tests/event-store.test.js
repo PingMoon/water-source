@@ -8,7 +8,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, existsSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -167,6 +167,18 @@ test('只读打开：能读，不能写', () => {
   } finally { cleanup(h) }
 })
 
-test('打不开的路径在启动时就失败，不等到写入', () => {
-  assert.throws(() => openDatabase({ path: join(tmpdir(), 'no-such-dir-xyz', 'a.db') }), /打不开数据库/)
+test('首次启动会自动建父目录（否则插件在 DSH 里静默失败）', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'whale-mk-'))
+  const dbPath = join(dir, 'deep', 'nested', 'x.db')
+  const db = openDatabase({ path: dbPath })
+  try { assert.equal(existsSync(dbPath), true) } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('父路径是文件时，启动就失败（不是等到写入才炸）', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'whale-bad-'))
+  const fileAsDir = join(dir, 'iamfile')
+  writeFileSync(fileAsDir, 'x')
+  try {
+    assert.throws(() => openDatabase({ path: join(fileAsDir, 'a.db') }), /建不了数据目录|打不开数据库/)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
