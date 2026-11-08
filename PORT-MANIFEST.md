@@ -17,6 +17,8 @@
 
 | `src/consolidate/pipeline.js` | dsh-persona | 0.18.1 | 2026-11-08 | 借 `consolidation_run` 的「running→done/failed 状态机」；编排逻辑自写 | 2026-11-08 | **上游曾因「重复计数」修过窗口取法，将来比对时注意** |
 
+| `src/plugin/ingest.js` | dsh-fish | v0.9.3 | 2026-11-08 | 借 `classifyMessage` / `messageText` 的来源判定（黑名单思路）；实现自写，未搬代码 | 2026-11-08 | 上游加新 MACHINE_KINDS 时要跟 |
+
 ## 未移植但已评估
 
 | 文件 | 结论 | 理由 |

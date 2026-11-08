@@ -1,3 +1,8 @@
-test(store): 补「自动建目录」与「父路径是文件」两条
+feat(plugin): 真人消息自动进流水线
 
-前者守住 DSH 里首次启动不静默失败，后者守住「路径真的不可用时启动就炸」。
+监听 ctx.on('session/event')，认准 type=user/message 且来源是人，调 whale.ingest。
+来源判定照 dsh-fish turns.js 的黑名单思路：runtime-context / skill-catalog /
+tool / assistant / plugin:* / 带 wake- 前缀的 rpcId 一律不算人话。
+
+没有 clientTimeZone 的 user 消息宁可不记——分不清是老客户端还是别的插件灌的。
+任何失败都吞掉：记账不能连累她说话。

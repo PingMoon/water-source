@@ -12,6 +12,7 @@ import path from 'node:path'
 import { createWhale } from '../core/service.js'
 import { mkdirSync, appendFileSync } from 'node:fs'
 import { defineTool } from './tool.js'
+import { registerIngest } from './ingest.js'
 
 export const name = 'whale'
 export const VERSION = '0.1.0'
@@ -128,6 +129,15 @@ export function apply(ctx, config = {}) {
     }
   } catch (err) {
     log('agent/created 监听没挂上：' + String(err?.message ?? err).slice(0, 160))
+  }
+
+  // ---- 自动 ingest：真人说的话自己进流水线 ----
+  try {
+    const offIngest = registerIngest(ctx, { whale, log })
+    if (typeof offIngest === 'function') disposers.push(offIngest)
+    log('已挂 session/event 观察者')
+  } catch (err) {
+    log('ingest 观察者没挂上：' + String(err?.message ?? err).slice(0, 160))
   }
 
   // 已经存在的 agent 也要挂（插件中途启用的情况）
