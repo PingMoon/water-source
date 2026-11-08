@@ -1,7 +1,10 @@
-fix(ci): real-test.mjs 被 --test 抓去当测试跑
+feat(skill): 从一次任务的材料里归纳 SKILL 草稿
 
-node --test 的默认匹配规则里有 *-test.mjs，scripts/real-test.mjs 正好撞上。
-它要 DEEPSEEK_API_KEY，CI 里没有 → 第一步就失败。
+M2 下半。难点不在写，在判断什么值得写：步骤要抽象成「怎么做这类事」，
+不是「这次做了什么」。
 
-两处修：改名 real-run.mjs 避开匹配；CI 和 npm test 都明确跑 tests/*.test.js。
-本地验证 119 通过。
+给它留了 skip 出口——宁可不出手册，也不出垃圾手册。
+一份错的手册比没有更糟：她会照着错的步骤做，还觉得自己会了。
+
+真模型实测（dsh-fish 调研材料）：产出「第三方库接入可行性评估」，
+5 步 + 3 个坑，其中一条坑正是这次调研的核心发现。

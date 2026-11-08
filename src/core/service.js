@@ -26,6 +26,7 @@ import { listSkills, readSkill, writeSkill, setStatus } from '../skill/store.js'
 import { buildIndex } from '../skill/index.js'
 import { matchSkill } from '../skill/match.js'
 import { recordUse, useStats, recentUses } from '../skill/use.js'
+import { induceSkill as induceFrom } from '../skill/induce.js'
 import path from 'node:path'
 
 /**
@@ -148,6 +149,13 @@ export function createWhale(opts = {}) {
       if (!st.canPromote) return { promoted: false, ...st }
       await setStatus(root, skillId, 'verified')
       return { promoted: true, ...st }
+    },
+    /** 从一次任务的材料里归纳一份 SKILL 草稿（draft），不是 verified */
+    async learnFrom(materials, o = {}) {
+      const r = await induceFrom({ materials, llm: o.llm, context: { goal: o.goal }, signal: o.signal })
+      if (!r.ok) return r
+      const written = await writeSkill(root, { ...r.skill, status: 'draft' })
+      return { ok: true, skill: written }
     },
     // 纯函数导出，方便调用方单独用
     lib: { decide, orderMaterials, makeMeaning, checkContract, derive, buildProjection },
