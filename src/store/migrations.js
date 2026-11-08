@@ -12,7 +12,7 @@
 
 import { StoreError } from '../util/errors.js'
 
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 
 const M1 = `
 CREATE TABLE IF NOT EXISTS event (
@@ -132,12 +132,17 @@ CREATE TABLE IF NOT EXISTS team_member (
 CREATE INDEX IF NOT EXISTS team_member_ticket ON team_member(ticket_id, status);
 `
 
+const M5 = `
+ALTER TABLE ticket ADD COLUMN assigned_at TEXT;
+`
+
 /** 迁移表：版本 -> SQL */
 const MIGRATIONS = [
   { version: 1, sql: M1 },
   { version: 2, sql: M2 },
   { version: 3, sql: M3 },
-  { version: 4, sql: M4 }
+  { version: 4, sql: M4 },
+  { version: 5, sql: M5 }
 ]
 
 export function currentVersion(db) {

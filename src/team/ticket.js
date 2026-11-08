@@ -50,6 +50,7 @@ export function transition(db, id, to, { assignee = undefined, result = undefine
   const sets = ['status = ?']
   const args = [to]
   if (assignee !== undefined) { sets.push('assignee = ?'); args.push(assignee) }
+  if (to === 'assigned') { sets.push('assigned_at = ?'); args.push(ts) }
   if (to === 'running') { sets.push('started_at = ?'); args.push(ts) }
   if (to === 'done' || to === 'failed' || to === 'cancelled') { sets.push('finished_at = ?'); args.push(ts) }
   if (result !== undefined) { sets.push('result_json = ?'); args.push(JSON.stringify(result)) }
@@ -62,6 +63,6 @@ export function reopen(db, id) {
   const t = getTicket(db, id)
   if (!t) throw new Error('没有这个 ticket：' + id)
   if (t.status !== 'failed') throw new Error('只有 failed 能重开，当前 ' + t.status)
-  db.prepare("UPDATE ticket SET status = 'open', assignee = NULL, started_at = NULL, finished_at = NULL WHERE id = ?").run(id)
+  db.prepare("UPDATE ticket SET status = 'open', assignee = NULL, assigned_at = NULL, started_at = NULL, finished_at = NULL WHERE id = ?").run(id)
   return getTicket(db, id)
 }
