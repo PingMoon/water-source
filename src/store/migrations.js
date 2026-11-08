@@ -12,7 +12,7 @@
 
 import { StoreError } from '../util/errors.js'
 
-export const SCHEMA_VERSION = 3
+export const SCHEMA_VERSION = 4
 
 const M1 = `
 CREATE TABLE IF NOT EXISTS event (
@@ -91,11 +91,53 @@ CREATE TABLE IF NOT EXISTS skill_use (
 CREATE INDEX IF NOT EXISTS skill_use_id ON skill_use(skill_id, at);
 `
 
+const M4 = `
+-- 工单：一个 ticket = 一件要做完的事
+CREATE TABLE IF NOT EXISTS ticket (
+  id          TEXT PRIMARY KEY,
+  thread_key  TEXT,
+  goal        TEXT NOT NULL,
+  status      TEXT NOT NULL CHECK (status IN ('open','assigned','running','done','failed','cancelled')),
+  assignee    TEXT,
+  created_at  TEXT NOT NULL,
+  started_at  TEXT,
+  finished_at TEXT,
+  result_json TEXT NOT NULL DEFAULT '{}'
+) STRICT;
+
+CREATE INDEX IF NOT EXISTS ticket_status ON ticket(status, created_at);
+
+-- 节点：同质、可替换。capacity = 同时能跑几个 ticket
+CREATE TABLE IF NOT EXISTS worker_node (
+  id        TEXT PRIMARY KEY,
+  name      TEXT NOT NULL,
+  capacity  INTEGER NOT NULL DEFAULT 1,
+  online    INTEGER NOT NULL DEFAULT 1,
+  last_beat TEXT NOT NULL
+) STRICT;
+
+-- team 成员：一个 ticket 内的并发单元（D26–D30）
+CREATE TABLE IF NOT EXISTS team_member (
+  id          TEXT PRIMARY KEY,
+  ticket_id   TEXT NOT NULL,
+  member_key  TEXT NOT NULL,
+  task        TEXT NOT NULL,
+  status      TEXT NOT NULL CHECK (status IN ('pending','running','done','failed','timeout','skipped')),
+  attempts    INTEGER NOT NULL DEFAULT 0,
+  error_class TEXT,
+  started_at  TEXT NOT NULL,
+  finished_at TEXT
+) STRICT;
+
+CREATE INDEX IF NOT EXISTS team_member_ticket ON team_member(ticket_id, status);
+`
+
 /** 迁移表：版本 -> SQL */
 const MIGRATIONS = [
   { version: 1, sql: M1 },
   { version: 2, sql: M2 },
-  { version: 3, sql: M3 }
+  { version: 3, sql: M3 },
+  { version: 4, sql: M4 }
 ]
 
 export function currentVersion(db) {
