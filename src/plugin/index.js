@@ -13,6 +13,8 @@ import { createWhale } from '../core/service.js'
 import { mkdirSync, appendFileSync } from 'node:fs'
 import { defineTool } from './tool.js'
 import { registerIngest } from './ingest.js'
+import { createDelegate } from './delegate.js'
+import { createLlm } from '../llm/client.js'
 
 export const name = 'water-source'
 export const VERSION = '0.1.0'
@@ -129,6 +131,36 @@ export function apply(ctx, config = {}) {
     }
   } catch (err) {
     log('agent/created 监听没挂上：' + String(err?.message ?? err).slice(0, 160))
+  }
+
+  // ---- delegate：把活派给 worker ----
+  try {
+    const makeLlm = () => {
+      const key = process.env.DEEPSEEK_API_KEY ?? process.env.DSH_DEEPSEEK_API_KEY
+      if (!key) return null
+      try { return createLlm({ apiKey: key, reasoningEffort: 'medium', timeoutMs: 120000 }) } catch { return null }
+    }
+    const delegateFn = createDelegate({ db: whale.db ?? null, makeLlm, log })
+    if (whale.db) {
+      const delegateTool = defineTool({
+        name: 'delegate',
+        description: '把一件需要独立执行者的事派给 worker 去做（会真实消耗 token）。适合：要做多步调研、要写代码、需要独立上下文的任务。不适合：闲聊、一句话能答的问题。',
+        parameters: {
+          type: 'object',
+          properties: {
+            goal: { type: 'string', description: '要做什么，一句话说清（用第一人称）' }
+          },
+          required: ['goal']
+        },
+        async execute(args) {
+          return await delegateFn(args)
+        }
+      })
+      disposers.push(ctx.tools.register(delegateTool))
+      log('工具已注册: delegate')
+    }
+  } catch (err) {
+    log('delegate 没挂上：' + String(err?.message ?? err).slice(0, 160))
   }
 
   // ---- 自动 ingest：真人说的话自己进流水线 ----

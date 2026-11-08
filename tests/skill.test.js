@@ -35,14 +35,14 @@ test('写 skill → 读回来，frontmatter 不丢', async () => {
     assert.equal(s.name, '调研一个开源库')
     assert.equal(s.status, 'draft')
     assert.ok(s.body.includes('读 README'))
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('没有 description 不许写（它决定什么时候被想起来）', async () => {
   const { w, dir } = fresh()
   try {
     await assert.rejects(() => w.writeSkill({ id: 'x', name: 'x', description: '' }), /description/)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('索引有预算：装不下的留在盘上，不进索引', async () => {
@@ -75,7 +75,7 @@ test('匹配：像的任务命中，不像的不命中', async () => {
 
     const miss = await w.matchSkill('我妈生日是哪天')
     assert.equal(miss.length, 0)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('用满 3 次且无失败 → 草稿转正', async () => {
@@ -89,7 +89,7 @@ test('用满 3 次且无失败 → 草稿转正', async () => {
     const r = await w.maybePromote('research-lib')
     assert.equal(r.promoted, true)
     assert.equal((await w.skill('research-lib')).status, 'verified')
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('有一次失败就不晋升', async () => {
@@ -102,5 +102,5 @@ test('有一次失败就不晋升', async () => {
     const r = await w.maybePromote('research-lib')
     assert.equal(r.promoted, false)
     assert.equal((await w.skill('research-lib')).status, 'draft')
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

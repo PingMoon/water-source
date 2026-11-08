@@ -95,5 +95,5 @@ test('端到端：归纳 → 落盘 → 第二次同类任务用上', async () =
 
     const used = await w.runTask('帮我调研一下 super-agent 这个库能不能接进来', { outcome: 'ok' })
     assert.equal(used.usedSkill, 'research-lib', '第二次没用上刚学会的手册')
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

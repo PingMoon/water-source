@@ -25,7 +25,7 @@ function freshDb() {
 
 function cleanup({ db, dir }) {
   closeDatabase(db)
-  try { rmSync(dir, { recursive: true, force: true }) } catch { /* ignore */ }
+  try { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) } catch { /* ignore */ }
 }
 
 test('迁移后版本正确，完整性检查通过', () => {
@@ -171,7 +171,7 @@ test('首次启动会自动建父目录（否则插件在 DSH 里静默失败）
   const dir = mkdtempSync(join(tmpdir(), 'whale-mk-'))
   const dbPath = join(dir, 'deep', 'nested', 'x.db')
   const db = openDatabase({ path: dbPath })
-  try { assert.equal(existsSync(dbPath), true) } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  try { assert.equal(existsSync(dbPath), true) } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('父路径是文件时，启动就失败（不是等到写入才炸）', () => {
@@ -180,5 +180,5 @@ test('父路径是文件时，启动就失败（不是等到写入才炸）', ()
   writeFileSync(fileAsDir, 'x')
   try {
     assert.throws(() => openDatabase({ path: join(fileAsDir, 'a.db') }), /建不了数据目录|打不开数据库/)
-  } finally { rmSync(dir, { recursive: true, force: true }) }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

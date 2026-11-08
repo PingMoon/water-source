@@ -51,15 +51,17 @@ test('导出契约：name / inject 是数组 / VERSION', () => {
 
 test('apply 能在没有 agent 的情况下完成初始化（不崩）', () => {
   const dir = mkdtempSync(join(tmpdir(), 'whale-pl-'))
+  let cleanup = () => {}
   try {
     const { ctx, state } = fakeCtx()
     const plugin = apply(ctx, { root: dir, tools: ['fs.read', 'fs.write', 'shell.run'], templateId: 'tp-default' })
-    assert.ok(state.tools.length === 1, '应该注册 1 个工具')
+    cleanup = () => { try { plugin.dispose() } catch { /* ignore */ } }
+    assert.equal(state.tools.length, 2, 'remember + delegate')
     assert.equal(state.tools[0].name, 'remember')
+    assert.equal(state.tools[1].name, 'delegate')
     assert.ok(state.tools[0].parameters.type === 'object', 'parameters 必须是标准 JSON Schema')
     assert.equal(plugin.dispose instanceof Function, true)
-    plugin.dispose()
-  } finally { rmSync(dir, { recursive: true, force: true }) }
+  } finally { cleanup(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('remember 工具真的写进账本', async () => {
@@ -76,7 +78,7 @@ test('remember 工具真的写进账本', async () => {
     assert.equal(events[0].person, 'first')
     assert.equal(events[0].source, 'tool')
     plugin.dispose()
-  } finally { rmSync(dir, { recursive: true, force: true }) }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('agent 创建后挂上 systemPrompt.context；有记忆时出内容，停用后空', async () => {
@@ -108,7 +110,7 @@ test('agent 创建后挂上 systemPrompt.context；有记忆时出内容，停�
 
     plugin.dispose()
     assert.equal(sections[0].text(), '', '停用后不该再注入')
-  } finally { rmSync(dir, { recursive: true, force: true }) }
+  } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('打包清单：package.json 与 cordis.patch.yml 对得上', () => {

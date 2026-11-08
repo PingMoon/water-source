@@ -33,7 +33,7 @@ test('真人消息：进账本，开线索', () => {
     assert.equal(events.length, 1)
     assert.equal(events[0].content, '帮我看看这段代码')
     assert.equal(w.threads().length, 1)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('宿主的 runtime-context 不算人话', () => {
@@ -44,7 +44,7 @@ test('宿主的 runtime-context 不算人话', () => {
     emit({ id: 's1' }, { type: 'user/message', data: { content: [{ type: 'text', text: '技能清单...' }], source: { kind: 'skill-catalog' } } })
     emit({ id: 's1' }, { type: 'user/message', data: { content: [{ type: 'text', text: '工具结果' }], source: { kind: 'tool' } } })
     assert.equal(w.read({ types: ['utterance'] }).length, 0)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('我们自己叫醒她的消息不算人话（rpcId 前缀）', () => {
@@ -52,7 +52,7 @@ test('我们自己叫醒她的消息不算人话（rpcId 前缀）', () => {
   try {
     emit({ id: 's1' }, { type: 'user/message', data: { content: [{ type: 'text', text: '（这一轮是你自己的）' }], source: { kind: 'user', clientTimeZone: 'Asia/Shanghai', rpcId: 'wake-abc' } } })
     assert.equal(w.read({ types: ['utterance'] }).length, 0)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('没有时区的 user 消息：宁可不记', () => {
@@ -60,7 +60,7 @@ test('没有时区的 user 消息：宁可不记', () => {
   try {
     emit({ id: 's1' }, { type: 'user/message', data: { text: '不知道从哪来的', source: { kind: 'user' } } })
     assert.equal(w.read({ types: ['utterance'] }).length, 0)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('噪音被丢弃，但不进账本（丢弃记录在 eval_drop）', () => {
@@ -69,7 +69,7 @@ test('噪音被丢弃，但不进账本（丢弃记录在 eval_drop）', () => {
     emit({ id: 's1' }, { type: 'user/message', data: { text: '嗯嗯', source: { kind: 'user', clientTimeZone: 'Asia/Shanghai' } } })
     assert.equal(w.read({ types: ['utterance'] }).length, 0)
     assert.equal(w.drops().length, 1)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('非 user/message 的事件不碰', () => {
@@ -78,7 +78,7 @@ test('非 user/message 的事件不碰', () => {
     emit({ id: 's1' }, { type: 'assistant/message', data: { content: [{ type: 'text', text: '她说的' }] } })
     emit({ id: 's1' }, { type: 'turn/end', data: {} })
     assert.equal(w.read({ types: ['utterance'] }).length, 0)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('messageText：三种形态都认得出来', () => {

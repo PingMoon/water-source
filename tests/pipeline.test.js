@@ -47,7 +47,7 @@ test('端到端：材料 → 定序 → 意义化 → 落库', async () => {
     const run = lastRun(db)
     assert.equal(run.status, 'done')
     assert.equal(run.stats.accepted, 2)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('否决生效：与已有信念冲突的草稿不落库', async () => {
@@ -62,7 +62,7 @@ test('否决生效：与已有信念冲突的草稿不落库', async () => {
     assert.equal(r.rejected, 1)
     assert.equal(r.vetoedDetail[0].reasonCode, 'conflict_unresolved')
     assert.equal(readEvents(db, { types: ['meaning'] }).length, 1, '原来那条还在，新的没进去')
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('编造来源的草稿被丢弃，不落库', async () => {
@@ -74,7 +74,7 @@ test('编造来源的草稿被丢弃，不落库', async () => {
     assert.equal(r.accepted, 0)
     assert.equal(r.dropped, 1)
     assert.equal(readEvents(db, { types: ['meaning'] }).length, 0)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('模型调用失败：run 标 failed，错误继续抛', async () => {
@@ -86,7 +86,7 @@ test('模型调用失败：run 标 failed，错误继续抛', async () => {
     const run = lastRun(db)
     assert.equal(run.status, 'failed')
     assert.ok(run.stats.error.includes('boom'))
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('没有材料时不调用模型', async () => {
@@ -97,5 +97,5 @@ test('没有材料时不调用模型', async () => {
     const r = await consolidate(db, { llm })
     assert.equal(called, false)
     assert.equal(r.ordered, 0)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

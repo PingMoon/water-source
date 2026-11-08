@@ -47,7 +47,7 @@ test('空库：写入 seed 成功', () => {
     const events = readEvents(db, { types: ['seed'] })
     assert.equal(events.length, 1)
     assert.equal(events[0].person, 'first')
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('已有历史：拒绝覆写', () => {
@@ -55,7 +55,7 @@ test('已有历史：拒绝覆写', () => {
   try {
     writeSeed(db)
     assert.throws(() => writeSeed(db), /拒绝覆写/)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('契约里有形容词：拒绝写入，且账本不变', () => {
@@ -63,5 +63,5 @@ test('契约里有形容词：拒绝写入，且账本不变', () => {
   try {
     assert.throws(() => writeSeed(db, { contract: '你是一个温柔的人' }), /形容词|身份定义/)
     assert.equal(readEvents(db).length, 0)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

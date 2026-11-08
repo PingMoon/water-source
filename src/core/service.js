@@ -87,6 +87,8 @@ export function createWhale(opts = {}) {
   }
 
   return {
+    /** 底层库句柄。给需要直接操作 ticket/team 表的模块用（如 delegate）。 */
+    get db() { return db },
     boot,
     close() { closeDatabase(db); db = null },
     status: () => status,

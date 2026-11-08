@@ -22,7 +22,7 @@ test('第一条接住并开线索', () => {
     assert.equal(r.decision, 'accept')
     assert.equal(r.threadKey, 'desk#1')
     assert.equal(w.read({ types: ['utterance'] }).length, 1)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('同房间追问：旁路，不加新线索', () => {
@@ -33,7 +33,7 @@ test('同房间追问：旁路，不加新线索', () => {
     assert.equal(r2.decision, 'bypass')
     assert.equal(r2.threadKey, 'desk#1')
     assert.equal(w.threads().length, 1)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('TTL 过期后开新线索', () => {
@@ -43,7 +43,7 @@ test('TTL 过期后开新线索', () => {
     const r = w.ingest('隔了很久的另一件事', { room: 'desk', now: 1000 + 31 * 60_000 })
     assert.equal(r.decision, 'accept')
     assert.equal(r.threadKey, 'desk#2')
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('不同房间互不干扰', () => {
@@ -53,7 +53,7 @@ test('不同房间互不干扰', () => {
     const b = w.ingest('你好', { room: 'qq-group:1', now: 1000 })
     assert.equal(a.threadKey, 'desk#1')
     assert.equal(b.threadKey, 'qq-group:1#1')
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('噪音被丢弃，但留下可见记录', () => {
@@ -66,7 +66,7 @@ test('噪音被丢弃，但留下可见记录', () => {
     assert.equal(drops.length, 1)
     assert.equal(drops[0].rule, 'ack')
     assert.equal(w.read({ types: ['utterance'] }).length, 0, '被丢的不该进账本')
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('误丢救济：10 条该接的全接（丢弃率 0/10）', () => {
@@ -82,7 +82,7 @@ test('误丢救济：10 条该接的全接（丢弃率 0/10）', () => {
       if (r.decision === 'drop') dropped++
     }
     assert.equal(dropped, 0, '误丢 ' + dropped + ' 条')
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('推翻一次丢弃：记录更新，文本能拿回来', () => {
@@ -95,12 +95,12 @@ test('推翻一次丢弃：记录更新，文本能拿回来', () => {
     assert.equal(o.text, '。。。')
     assert.equal(w.dropStats().overturned, 1)
     assert.equal(w.dropStats().rate, 1)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('推翻不存在的记录：报错，不静默', () => {
   const { w, dir } = fresh()
   try {
     assert.throws(() => w.overturn('ev_NOPE'), /没有这条丢弃记录/)
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

@@ -33,7 +33,7 @@ test('ticket：创建 → 分配 → 跑 → 完成', () => {
     const done = transition(db, t.id, 'done', { result: { ok: true } })
     assert.equal(done.status, 'done')
     assert.ok(done.finished_at)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('ticket：非法流转被拒，不静默改', () => {
@@ -42,7 +42,7 @@ test('ticket：非法流转被拒，不静默改', () => {
     const t = createTicket(db, { goal: 'x' })
     assert.throws(() => transition(db, t.id, 'done'), /不允许的流转/)
     assert.equal(getTicket(db, t.id).status, 'open')
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('ticket：failed 能显式重开，别的不行', () => {
@@ -55,7 +55,7 @@ test('ticket：failed 能显式重开，别的不行', () => {
     transition(db, t2.id, 'assigned', { assignee: 'n1' })
     transition(db, t2.id, 'failed')
     assert.equal(reopen(db, t2.id).status, 'open')
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 // ---------- pool ----------
@@ -70,7 +70,7 @@ test('pool：最少负载优先', () => {
     const pick = pickNode(db, 'some-ticket')
     const loads = listNodes(db).map(n => ({ id: n.id, load: loadOf(db, n.id) }))
     assert.equal(pick.load, Math.min(...loads.map(x => x.load)))
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('pool：同一个 ticket 多次问，只要负载没变答案一样', () => {
@@ -83,7 +83,7 @@ test('pool：同一个 ticket 多次问，只要负载没变答案一样', () =>
     const c = pickNode(db, 'ticket-X')
     assert.equal(a.id, b.id)
     assert.equal(b.id, c.id)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('pool：满载与离线的节点不分配', () => {
@@ -96,7 +96,7 @@ test('pool：满载与离线的节点不分配', () => {
     registerNode(db, { id: 'n2', name: 'b', capacity: 1 })
     setOnline(db, 'n2', false)
     assert.equal(pickNode(db, 'other'), null, '离线节点不该被挑中')
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 // ---------- team ----------
@@ -124,7 +124,7 @@ test('team：开成员 → 跑 → 部分失败', () => {
     assert.equal(idx.failed, 1)
     assert.equal(idx.incomplete, true)
     assert.deepEqual(idx.missing, ['bench'], '不完整性要能点名')
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('team：可重试的失败能重试，不可重试的直接拒', () => {
@@ -139,7 +139,7 @@ test('team：可重试的失败能重试，不可重试的直接拒', () => {
     const r = retryMember(db, list[1].id)
     assert.equal(r.ok, false)
     assert.ok(r.why.includes('不可重试'))
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('team：重试是同一行 attempts+1，不是新增行（幂等）', () => {
@@ -157,7 +157,7 @@ test('team：重试是同一行 attempts+1，不是新增行（幂等）', () =>
     assert.ok(r.why.includes('预算'))
     assert.equal(members(db, t.id).length, 1, '重试不该新增行')
     assert.equal(members(db, t.id)[0].attempts, 2)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('team：成员 key 不能重复，也不能超 5 个', () => {
@@ -167,5 +167,5 @@ test('team：成员 key 不能重复，也不能超 5 个', () => {
     assert.throws(() => openTeam(db, t.id, [{ key: 'a', task: 'a' }, { key: 'a', task: 'b' }]), /重复/)
     const many = Array.from({ length: MAX_MEMBERS + 1 }, (_, i) => ({ key: 'k' + i, task: 't' }))
     assert.throws(() => openTeam(db, t.id, many), /不超过/)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

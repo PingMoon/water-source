@@ -30,7 +30,7 @@ test('刚开的东西不算卡住', () => {
     const t = createTicket(db, { goal: 'a', now: NOW })
     const r = scan(db, { now: NOW + 1000 })
     assert.equal(r.total, 0, JSON.stringify(r))
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('排队太久：open 超时被报出来', () => {
@@ -40,7 +40,7 @@ test('排队太久：open 超时被报出来', () => {
     const r = scan(db, { now: NOW + DEFAULT_TIMEOUTS.openMs + 1000 })
     assert.equal(r.stalledOpen.length, 1)
     assert.equal(r.stalledOpen[0].id, t.id)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('分配了没开工：assigned 超时', () => {
@@ -52,7 +52,7 @@ test('分配了没开工：assigned 超时', () => {
     const r = scan(db, { now: NOW + DEFAULT_TIMEOUTS.assignedMs + 1000 })
     assert.equal(r.stalledAssigned.length, 1)
     assert.equal(r.stalledAssigned[0].assignee, 'n1')
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('跑了没结束：running 超时', () => {
@@ -63,7 +63,7 @@ test('跑了没结束：running 超时', () => {
     transition(db, t.id, 'running', { now: NOW })
     const r = scan(db, { now: NOW + DEFAULT_TIMEOUTS.runningMs + 1000 })
     assert.equal(r.stalledRunning.length, 1)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('已完成的 ticket 不会再被报', () => {
@@ -75,7 +75,7 @@ test('已完成的 ticket 不会再被报', () => {
     transition(db, t.id, 'done', { now: NOW + 1000 })
     const r = scan(db, { now: NOW + 99999999 })
     assert.equal(r.total, 0)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('节点心跳停了 → 报死', () => {
@@ -87,7 +87,7 @@ test('节点心跳停了 → 报死', () => {
     // 心跳回来就不算死了
     heartbeat(db, 'n1', NOW + DEFAULT_TIMEOUTS.heartbeatMs + 2000)
     assert.equal(scan(db, { now: NOW + DEFAULT_TIMEOUTS.heartbeatMs + 3000 }).deadNodes.length, 0)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('sweep 默认 dryRun：只报告，不改状态', () => {
@@ -98,7 +98,7 @@ test('sweep 默认 dryRun：只报告，不改状态', () => {
     assert.equal(r.dryRun, true)
     assert.ok(r.actions.some((a) => a.type === 'ticket.failed'))
     assert.equal(getTicket(db, t.id).status, 'open', 'dryRun 不该改状态')
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('sweep 真跑：ticket → failed，member → timeout，node → offline', () => {
@@ -116,7 +116,7 @@ test('sweep 真跑：ticket → failed，member → timeout，node → offline',
     assert.equal(getTicket(db, t.id).status, 'failed')
     assert.equal(members(db, t.id)[0].status, 'timeout')
     assert.equal(members(db, t.id)[0].error_class, 'timeout')
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('sweep 后还能 reopen（不删数据，只推进状态）', () => {
@@ -126,7 +126,7 @@ test('sweep 后还能 reopen（不删数据，只推进状态）', () => {
     sweep(db, { now: NOW + DEFAULT_TIMEOUTS.openMs + 1000, dryRun: false })
     assert.equal(getTicket(db, t.id).status, 'failed')
     assert.equal(reopen(db, t.id).status, 'open')
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('超时可配，不写死', () => {
@@ -135,5 +135,5 @@ test('超时可配，不写死', () => {
     const t = createTicket(db, { goal: 'a', now: NOW })
     const r = scan(db, { now: NOW + 2000, timeouts: { openMs: 1000 } })
     assert.equal(r.stalledOpen.length, 1)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

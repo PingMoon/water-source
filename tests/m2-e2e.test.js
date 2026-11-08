@@ -54,7 +54,7 @@ test('完整闭环：没手册 → 沉淀 → 第二次用上 → 用够转正',
     const promoted = await w.maybePromote('research-lib')
     assert.equal(promoted.promoted, true)
     assert.equal((await w.skill('research-lib')).status, 'verified', '用够次数却没转正')
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('不相关的任务不会去翻手册', async () => {
@@ -70,5 +70,5 @@ test('不相关的任务不会去翻手册', async () => {
     assert.equal(r.usedSkill, null)
     assert.equal(r.needsNewSkill, true)
     assert.equal(w.skillUse('research-lib').total, 0, '不相关任务也记了使用')
-  } finally { w.close(); rmSync(dir, { recursive: true, force: true }) }
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

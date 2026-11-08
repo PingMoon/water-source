@@ -41,7 +41,7 @@ test('开线索：seq 递增', () => {
     assert.equal(a.seq, 1)
     assert.equal(b.seq, 2)
     assert.equal(latestThread(db, 'room-a').key, b.key)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('活跃线索：TTL 内返回，超时返回 null', () => {
@@ -50,7 +50,7 @@ test('活跃线索：TTL 内返回，超时返回 null', () => {
     const t = openThread(db, 'room-b', 1000)
     assert.equal(activeThread(db, 'room-b', 1000 + 60_000, 30 * 60_000).key, t.key)
     assert.equal(activeThread(db, 'room-b', 1000 + 31 * 60_000, 30 * 60_000), null)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('碰一下会续命', () => {
@@ -59,7 +59,7 @@ test('碰一下会续命', () => {
     const t = openThread(db, 'room-c', 1000)
     touchThread(db, t.key, 1000 + 20 * 60_000)
     assert.ok(activeThread(db, 'room-c', 1000 + 40 * 60_000, 30 * 60_000))
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('判断：活跃线索 → 旁路，不看内容', () => {

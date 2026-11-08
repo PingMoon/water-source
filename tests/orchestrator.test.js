@@ -83,7 +83,7 @@ test('single：开一个 ticket，分配节点', () => {
     assert.equal(r.node, 'n1')
     assert.equal(getTicket(db, r.ticket.id).status, 'assigned')
     assert.equal(members(db, r.ticket.id).length, 0)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('team：ticket + 成员一起开出来', () => {
@@ -97,7 +97,7 @@ test('team：ticket + 成员一起开出来', () => {
     assert.equal(r.ok, true)
     assert.equal(r.members.length, 2)
     assert.equal(members(db, r.ticket.id).length, 2)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('reject：不开 ticket', () => {
@@ -108,7 +108,7 @@ test('reject：不开 ticket', () => {
     assert.ok(r.why.includes('一句话'))
     const cnt = db.prepare('SELECT COUNT(*) c FROM ticket').get()
     assert.equal(cnt.c, 0)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('没有可用节点：ticket 留在 open，不硬塞', () => {
@@ -119,7 +119,7 @@ test('没有可用节点：ticket 留在 open，不硬塞', () => {
     assert.equal(r.ok, true)
     assert.equal(r.node, null)
     assert.equal(getTicket(db, r.ticket.id).status, 'open', '没节点就该留在 open 排队')
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 // ---------- 端到端 ----------
@@ -141,5 +141,5 @@ test('orchestrate：模型说拆就拆，说单就单', async () => {
     })
     assert.equal(team.decision, 'team')
     assert.equal(team.members.length, 3)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

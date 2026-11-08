@@ -12,6 +12,7 @@
  */
 
 import { getTicket, transition } from './ticket.js'
+import { getMember, startMember, finishMember } from './team.js'
 import { LlmError } from '../llm/client.js'
 
 export const DEFAULT_BUDGET = {
@@ -104,4 +105,38 @@ export async function drain(db, { llm, budget = {}, limit = 3, now = Date.now(),
     spent += res.result?.tokens ?? 0
   }
   return { ran: out.length, spent, results: out }
+}
+
+/**
+ * 跑一个 team 成员：用它的 task 当一次独立的目标。
+ *
+ * 成员没有自己的 ticket——它在父 ticket 里。所以这里不碰 ticket 状态，
+ * 只推进成员状态。父 ticket 由编排层收口。
+ */
+export async function runMember(db, memberId, { llm, budget = {}, now = Date.now(), signal } = {}) {
+  const m = getMember(db, memberId)
+  if (!m) return { ok: false, why: '没有这个成员' }
+  if (m.status !== 'pending') return { ok: false, why: '只有 pending 能跑，当前 ' + m.status }
+  if (!llm || typeof llm.chat !== 'function') throw new LlmError('runMember 需要 llm.chat')
+
+  const B = { ...DEFAULT_BUDGET, ...sanitizeBudget(budget) }
+  startMember(db, memberId, { now })
+  const started = Date.now()
+  try {
+    const res = await llm.chat(
+      [{ role: 'system', content: SYSTEM }, { role: 'user', content: String(m.task).slice(0, 2000) }],
+      { temperature: 0.3, signal }
+    )
+    const usage = res.usage ?? null
+    const tokens = totalTokens(usage)
+    finishMember(db, memberId, { status: 'done', now: now + (Date.now() - started) })
+    return {
+      ok: true, memberId, key: m.member_key,
+      result: { text: String(res.content ?? '').trim(), tokens, usage, overBudget: tokens > B.maxTokens, ms: Date.now() - started }
+    }
+  } catch (err) {
+    const cls = err instanceof LlmError ? 'llm' : 'unknown'
+    try { finishMember(db, memberId, { status: 'failed', errorClass: cls, now: now + (Date.now() - started) }) } catch { /* ignore */ }
+    return { ok: false, memberId, key: m.member_key, why: String(err?.message ?? err).slice(0, 200) }
+  }
 }

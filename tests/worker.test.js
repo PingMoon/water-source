@@ -43,7 +43,7 @@ test('跑成功：ticket → done，结果与用量都记下', async () => {
     assert.equal(result.tokens, 150)
     assert.equal(result.overBudget, false)
     assert.ok(result.text.includes('WAL'))
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('超预算：仍然完成，但标 overBudget', async () => {
@@ -58,7 +58,7 @@ test('超预算：仍然完成，但标 overBudget', async () => {
     const result = JSON.parse(getTicket(db, t.id).result_json)
     assert.equal(result.overBudget, true)
     assert.equal(result.budget.maxTokens, 1000)
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('模型报错：ticket → failed，原因写进 result', async () => {
@@ -71,7 +71,7 @@ test('模型报错：ticket → failed，原因写进 result', async () => {
     const after = getTicket(db, t.id)
     assert.equal(after.status, 'failed')
     assert.ok(JSON.parse(after.result_json).error.includes('boom'))
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('只有 assigned 能跑', async () => {
@@ -81,7 +81,7 @@ test('只有 assigned 能跑', async () => {
     const r = await runTicket(db, t.id, { llm: fake('x'), now: NOW })
     assert.equal(r.ok, false)
     assert.ok(r.why.includes('assigned'))
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
 test('usage 字段名兼容：total / prompt+completion / input+output', () => {
@@ -109,5 +109,5 @@ test('drain：一次只跑 limit 个，会话预算用尽就停', async () => {
     // 第一个 600，第二个 1200 超预算 → 后面都跳过
     const skipped = r.results.filter((x) => !x.ok).length
     assert.ok(skipped >= 2, '预算应该在第二次之后就拦住，实际：' + JSON.stringify(r.results))
-  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true }) }
+  } finally { closeDatabase(db); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

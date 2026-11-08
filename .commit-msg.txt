@@ -1,14 +1,13 @@
-feat(team): worker 执行器（预算优先 / 失败不吞）
+feat(plugin): delegate 工具——把活派给 worker
 
-M3.5 的定位：worker 不是 agent，是一次受控的模型调用——没有工具、
-看不到别的 ticket、只拿到自己的 goal。真接 DSH subagent 是下一步。
+为什么不自动触发：自动开单会吵。每条消息都判断「要不要开工单」，大半是白花 token；
+而模型自己知道什么时候需要独立执行者。所以把判断权交回给女仆长。
 
-两条硬约束：
-1. 预算优先：单 ticket token 上限，超了记账并标 overBudget，不静默继续；
-   drain 还会会话级封顶，不许一口气把池子抽干。
-2. 失败不吞：执行失败把 ticket 推成 failed，原因写进 result_json。
+执行要模型客户端，插件拿不到宿主的配置，所以从 DEEPSEEK_API_KEY 取；
+没有就明确说不，不假装能跑。
 
-client 加 reasoningEffort（low/medium/high），worker 用 medium。
+顺手修两个真 bug：
+1. team 分支的 ticket 停在 assigned，而状态机不允许 assigned → done，要先 running；
+2. 测试里 dispose 写在 assert 后面，断言一失败就漏关库，Windows 上临时目录删不掉。
 
-真实验证：SQLite WAL 小调研，406 tokens / 预算 2000，2.8 秒，done。
-166 个测试。
+172 个测试。
