@@ -8,6 +8,8 @@
  */
 
 import { DatabaseSync } from 'node:sqlite'
+import { mkdirSync } from 'node:fs'
+import nodePath from 'node:path'
 import { StoreError } from '../util/errors.js'
 
 /** node:sqlite 在 Node 22.5–23.3 需要 --experimental-sqlite；23.4+ 默认可用 */
@@ -25,6 +27,12 @@ export function assertSqliteAvailable() {
 export function openDatabase({ path, readOnly = false } = {}) {
   if (!path) throw new StoreError('openDatabase 需要 path')
   assertSqliteAvailable()
+  // SQLite 不会替我们建目录。第一次启动时 ~/.whale 还不存在，
+  // 不建就会「打不开数据库」——而插件层是静默失败，查起来极难。
+  if (!readOnly) {
+    try { mkdirSync(nodePath.dirname(path), { recursive: true }) }
+    catch (err) { throw new StoreError('建不了数据目录：' + (err?.message ?? err), { path }) }
+  }
   let db
   try {
     db = new DatabaseSync(path, { readOnly })

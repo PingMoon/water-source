@@ -10,6 +10,7 @@
 import os from 'node:os'
 import path from 'node:path'
 import { createWhale } from '../core/service.js'
+import { mkdirSync, appendFileSync } from 'node:fs'
 import { defineTool } from './tool.js'
 
 export const name = 'whale'
@@ -45,8 +46,16 @@ export function apply(ctx, config = {}) {
     const boot = whale.boot()
     log('启动 · schema v' + boot.schemaVersion + ' · 事件 ' + boot.events + ' · 播种 ' + (boot.seeded ? '是' : '否'))
   } catch (err) {
-    // 启动失败不能带走整个插件树——但必须留下痕迹，别静默变哑巴
-    log('启动失败：' + String(err?.message ?? err).slice(0, 200))
+    // 启动失败不能带走整个插件树——但必须留下痕迹，别静默变哑巴。
+    // 宿主 logger 在插件失败时常常收不到，所以同时写一份盘。
+    const msg = String(err?.message ?? err).slice(0, 400)
+    log('启动失败：' + msg)
+    try {
+      const dir = path.join(os.homedir(), '.dsh')
+      mkdirSync(dir, { recursive: true })
+      appendFileSync(path.join(dir, 'whale-boot-error.log'),
+        new Date().toISOString() + ' ' + msg + '\n' + String(err?.stack ?? '').split('\n').slice(0, 6).join('\n') + '\n')
+    } catch { /* 连日志都写不了就真的没办法了 */ }
     return { dispose() {} }
   }
 
