@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.db binary
+*.db-wal binary
+*.db-shm binary
+*.png binary

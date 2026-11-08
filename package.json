@@ -1,0 +1,36 @@
+{
+  "name": "@local/whale",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "鲸鱼娘内核 · 账本 + 派生 + 归并 + 准入 + skill",
+  "main": "src/plugin/index.js",
+  "scripts": {
+    "test": "node --test",
+    "test:one": "node --test tests/event-store.test.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "UNLICENSED",
+  "exports": {
+    ".": "./src/plugin/index.js",
+    "./core": "./src/core/service.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": []
+    }
+  },
+  "files": [
+    "src",
+    "cordis.patch.yml",
+    "README.md",
+    "THIRD-PARTY-NOTICES.md"
+  ]
+}
