@@ -5,9 +5,9 @@
 ## 一、结构
 
 ```
-whale/
+water-source/
 ├── package.json        # name/main/dsh.bundle.patch
-├── cordis.patch.yml    # insert: id=whale, name=@local/whale
+├── cordis.patch.yml    # insert: id=water-source, name=@local/water-source
 └── src/plugin/index.js # apply(ctx, config)
 ```
 
@@ -15,19 +15,19 @@ whale/
 
 在 DSH 里让它自己装最省事：
 
-> 把 `C:\...\whale` 这个目录作为一个本地插件装进 web profile。
+> 把 `C:\...\water-source` 这个目录作为一个本地插件装进 web profile。
 
 命令行等价：
 
 ```bash
-dsh plugin --profile web add file:C:/Users/12626/Documents/deepseek-harness/default-workspace/whale
+dsh plugin --profile web add file:C:/Users/12626/Documents/deepseek-harness/default-workspace/water-source
 ```
 
 装完**重启一次 DSH**。
 
 ## 三、数据在哪
 
-`~/.whale/`（可用环境变量 `WHALE_HOME` 或插件配置里的 `root` 覆盖）：
+`~/.water-source/`（可用环境变量 `WATER_SOURCE_HOME` 或插件配置里的 `root` 覆盖）：
 
 ```
 ledger.db     账本（事件只追加，触发器强制）
@@ -36,9 +36,9 @@ skills/       SKILL.md
 
 ## 四、验证装上了
 
-1. 看日志里有没有 `[whale] 启动 · schema v3 · 事件 N`
+1. 看日志里有没有 `[water-source] 启动 · schema v3 · 事件 N`
 2. 让她调一次 `remember` 工具（直接在对话里说「记住我不吃辣」）
-3. 看 `~/.whale/ledger.db` 里有没有多一条 `source=tool` 的事件
+3. 看 `~/.water-source/ledger.db` 里有没有多一条 `source=tool` 的事件
 
 ## 五、这一版在 DSH 里做了什么、没做什么
 
@@ -54,8 +54,8 @@ skills/       SKILL.md
 
 ## 六、出问题怎么看
 
-日志前缀统一是 `[whale]`。常见三条：
+日志前缀统一是 `[water-source]`。常见三条：
 
-- `启动失败：...` —— 多半是 `~/.whale` 权限或 node:sqlite 不可用（要 Node ≥22，建议 24）
+- `启动失败：...` —— 多半是 `~/.water-source` 权限或 node:sqlite 不可用（要 Node ≥22，建议 24）
 - `remember 工具没挂上` —— 宿主 `ctx.tools` 不可用
 - `systemPrompt 挂不上` —— 宿主版本没有 `agent.ctx.systemPrompt.context`

@@ -42,7 +42,7 @@ function fakeAgent(sections) {
 }
 
 test('导出契约：name / inject 是数组 / VERSION', () => {
-  assert.equal(name, 'whale')
+  assert.equal(name, 'water-source')
   assert.ok(Array.isArray(inject), 'inject 必须是数组——写成对象会后者覆盖前者，服务静默缺失')
   assert.ok(inject.includes('tools'))
   assert.equal(inject.includes('systemPrompt'), false, 'systemPrompt 不该进 inject——缺了会把整个插件拖下水')
@@ -92,7 +92,7 @@ test('agent 创建后挂上 systemPrompt.context；有记忆时出内容，停�
     // 模拟 agent 创建
     state.listeners['agent/created']({ agent: fakeAgent(sections) })
     assert.equal(sections.length, 1, 'agent 创建后应该挂上 context')
-    assert.equal(sections[0].name, 'whale-memory')
+    assert.equal(sections[0].name, 'water-source-memory')
     assert.equal(sections[0].interpolate, false, '必须是纯文本，不许被当模板解析')
 
     // 空记忆 → 空串
@@ -113,11 +113,11 @@ test('agent 创建后挂上 systemPrompt.context；有记忆时出内容，停�
 
 test('打包清单：package.json 与 cordis.patch.yml 对得上', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
-  assert.equal(pkg.name, '@local/whale')
+  assert.equal(pkg.name, '@local/water-source')
   assert.equal(pkg.main, 'src/plugin/index.js')
   assert.equal(pkg.dsh.bundle.patch, './cordis.patch.yml')
   assert.equal(pkg.type, 'module')
   const patch = readFileSync(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
-  assert.ok(patch.includes('id: whale'))
-  assert.ok(patch.includes("@local/whale"))
+  assert.ok(patch.includes('id: water-source'))
+  assert.ok(patch.includes("@local/water-source"))
 })

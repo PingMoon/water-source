@@ -1,8 +1,8 @@
-feat(plugin): 真人消息自动进流水线
+chore: 改名 whale → water-source（水源）
 
-监听 ctx.on('session/event')，认准 type=user/message 且来源是人，调 whale.ingest。
-来源判定照 dsh-fish turns.js 的黑名单思路：runtime-context / skill-catalog /
-tool / assistant / plugin:* / 带 wake- 前缀的 rpcId 一律不算人话。
+设计目的：养出一个会自己长、你也改不了的存在。
+水从源头来，她从一个一个事件里长出来。
 
-没有 clientTimeZone 的 user 消息宁可不记——分不清是老客户端还是别的插件灌的。
-任何失败都吞掉：记账不能连累她说话。
+改动面：目录名 / package name / 插件 id / cordis.patch.yml /
+profile 的 link 与 bundles / 数据目录 ~/.whale → ~/.water-source / 文档引用。
+119 个测试全绿。

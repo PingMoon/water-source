@@ -1,3 +1,3 @@
 - insert:
-    - id: whale
-      name: '@local/whale'
+    - id: water-source
+      name: '@local/water-source'

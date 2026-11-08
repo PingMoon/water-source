@@ -1,9 +1,9 @@
 {
-  "name": "@local/whale",
+  "name": "@local/water-source",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "鲸鱼娘内核 · 账本 + 派生 + 归并 + 准入 + skill",
+  "description": "水源 · 从事件流里长出来的人格内核（账本 / 派生 / 归并 / 准入 / skill）",
   "main": "src/plugin/index.js",
   "scripts": {
     "test": "node --test",

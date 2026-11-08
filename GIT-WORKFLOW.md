@@ -44,6 +44,6 @@
 ## 不许做的事
 
 - 不许 force push main——历史是账本，和她的 self-log 同一条原则
-- 不许把 `~/.whale/` 或任何 `.db` 提交进来
+- 不许把 `~/.water-source/` 或任何 `.db` 提交进来
 - 不许把 API key 写进任何文件（只走环境变量）
 - 不许删除 PORT-MANIFEST 的来源记录

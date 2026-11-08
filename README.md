@@ -1,4 +1,4 @@
-# whale · 鲸鱼娘内核
+# water-source · 鲸鱼娘内核
 
 M0 地基：账本 + 派生 + 归并 + 内容准入。
 施工依据见 `research/whale-arch/BLUEPRINT-M0-v1.md`。

@@ -14,7 +14,7 @@ import { mkdirSync, appendFileSync } from 'node:fs'
 import { defineTool } from './tool.js'
 import { registerIngest } from './ingest.js'
 
-export const name = 'whale'
+export const name = 'water-source'
 export const VERSION = '0.1.0'
 
 /** 一个数组写全。缺哪个服务，插件就不会被加载——所以只列真正需要的。 */
@@ -23,11 +23,11 @@ export const VERSION = '0.1.0'
 // 写进 inject 反而会把「少一个功能」放大成「插件不装」。
 export const inject = ['tools']
 
-const MEMORY_SECTION = 'whale-memory'
+const MEMORY_SECTION = 'water-source-memory'
 const REMEMBER_TOOL = 'remember'
 
 export function apply(ctx, config = {}) {
-  const root = String(config.root ?? process.env.WHALE_HOME ?? path.join(os.homedir(), '.whale'))
+  const root = String(config.root ?? process.env.WATER_SOURCE_HOME ?? path.join(os.homedir(), '.water-source'))
   const templateId = String(config.templateId ?? 'tp-default')
   const tools = Array.isArray(config.tools) ? config.tools : ['fs.read', 'fs.write', 'shell.run']
   const disposers = []
@@ -36,7 +36,7 @@ export function apply(ctx, config = {}) {
   let stopped = false
 
   const log = (msg) => {
-    const line = '[whale] ' + msg
+    const line = '[water-source] ' + msg
     diag.push(line)
     try { ctx?.logger?.info?.(line) } catch { /* 宿主 logger 不可用就算了 */ }
   }
@@ -54,7 +54,7 @@ export function apply(ctx, config = {}) {
     try {
       const dir = path.join(os.homedir(), '.dsh')
       mkdirSync(dir, { recursive: true })
-      appendFileSync(path.join(dir, 'whale-boot-error.log'),
+      appendFileSync(path.join(dir, 'water-source-boot-error.log'),
         new Date().toISOString() + ' ' + msg + '\n' + String(err?.stack ?? '').split('\n').slice(0, 6).join('\n') + '\n')
     } catch { /* 连日志都写不了就真的没办法了 */ }
     return { dispose() {} }
@@ -156,7 +156,7 @@ export function apply(ctx, config = {}) {
   }
 
   // cordis 4 不认 apply 返回的 { dispose }，只认 ctx.effect
-  if (typeof ctx?.effect === 'function') ctx.effect(() => shutdown, 'whale.shutdown')
+  if (typeof ctx?.effect === 'function') ctx.effect(() => shutdown, 'water-source.shutdown')
   else ctx?.on?.('dispose', shutdown)
 
   return {
