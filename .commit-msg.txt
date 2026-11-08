@@ -1,0 +1,5 @@
+fix(plugin): inject 只留 tools
+
+systemPrompt / agents 是 agent 级或可选服务，写进 inject 的代价是：
+缺任何一个，整个插件不会被加载——把一个「少一个功能」放大成「插件不装」。
+改成可选探测（agent.ctx.systemPrompt?.context / ctx.agents?.list）。

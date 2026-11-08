@@ -45,7 +45,7 @@ test('导出契约：name / inject 是数组 / VERSION', () => {
   assert.equal(name, 'whale')
   assert.ok(Array.isArray(inject), 'inject 必须是数组——写成对象会后者覆盖前者，服务静默缺失')
   assert.ok(inject.includes('tools'))
-  assert.ok(inject.includes('systemPrompt'))
+  assert.equal(inject.includes('systemPrompt'), false, 'systemPrompt 不该进 inject——缺了会把整个插件拖下水')
   assert.match(VERSION, /^\d+\.\d+\.\d+$/)
 })
 

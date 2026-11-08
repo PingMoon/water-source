@@ -16,7 +16,10 @@ export const name = 'whale'
 export const VERSION = '0.1.0'
 
 /** 一个数组写全。缺哪个服务，插件就不会被加载——所以只列真正需要的。 */
-export const inject = ['tools', 'systemPrompt', 'agents']
+// ⚠ 只列**必须存在**的服务：缺一个，整个插件不会被加载。
+// systemPrompt / agents 走可选探测（agent.ctx.systemPrompt?.context、ctx.agents?.list），
+// 写进 inject 反而会把「少一个功能」放大成「插件不装」。
+export const inject = ['tools']
 
 const MEMORY_SECTION = 'whale-memory'
 const REMEMBER_TOOL = 'remember'
