@@ -48,12 +48,15 @@ async function readBody(req, limit = 64 * 1024) {
  */
 export function registerRoutes(webServer, deps) {
   if (!webServer) return () => {}
-  const add = webServer.route ?? webServer.addRoute ?? webServer.get
+  // ⚠ 宿主的形状是 register({ kind, path, handler })——不是 register(path, handler)。
+  // 2026-11-09 踩过：写成 route/addRoute 全都不存在，注册静默不报错，请求一律 404。
+  // 判据照 dsh-fish observe.js:2213。
+  const add = webServer.register
   if (typeof add !== 'function') return () => {}
 
-  const handler = async (req, res, next) => {
+  const handler = async (req, res) => {
     const url = String(req.url ?? '')
-    if (!url.startsWith(PREFIX)) { if (next) next(); return }
+    if (!url.startsWith(PREFIX)) { res.writeHead(404, { 'content-type': 'application/json' }); res.end('{"ok":false}'); return }
     const p = url.slice(PREFIX.length).split('?')[0] || '/'
     const whale = deps.getWhale()
     try {
@@ -93,6 +96,14 @@ export function registerRoutes(webServer, deps) {
     }
   }
 
-  const off = add(handler)
-  return typeof off === 'function' ? off : () => {}
+  let off
+  try {
+    off = add({ kind: 'prefix', path: PREFIX, handler })
+  } catch (err) {
+    deps.log('路由注册失败：' + String(err?.message ?? err).slice(0, 160))
+    return () => {}
+  }
+  if (typeof off === 'function') return off
+  if (off && typeof off.dispose === 'function') return () => off.dispose()
+  return () => {}
 }
