@@ -1,14 +1,14 @@
-fix(routes): webServer.register 的形状是对象，不是 (path, handler)
+feat: stripHostPrompt 实现（摘掉宿主那段 coding agent 人设）
 
-2026-11-09 实锤 404。
+宿主 deployment:persona-prefix 那段 'You are a coding agent…' 有好几千字，
+排在所有插件段前面。模型先认下那句空话，再读到她是谁——一半是编码助手，一半是小泉。
 
-我写的是 webServer.route ?? addRoute ?? get —— 三个全都不存在，
-于是路由一条没注册，而且**静默不报错**：插件照常启动、日志照常打「路由已注册」，
-请求一律 404。
+做法照 dsh-fish identity.js:271 的 attachAssembleFix：
+  · 事件 system-prompt/assemble 是 waterfall，必须 await next()
+  · prepend: true 排最外层先跑，拿到宿主组装结果再整改
+  · 整改失败**原样放行**——链断了她一整轮读不到任何系统提示词
 
-宿主的真实形状（照 dsh-fish observe.js:2213）：
-  webServer.register({ kind: 'prefix', path, handler })
+开关是函数（enabled: () => cfg.stripHostPrompt），设置页改完下一轮就生效。
+默认关：它动的是宿主，不是我们自己的地盘。
 
-顺带去掉 next()——prefix 路由匹配到就自己处理，不存在转交。
-
-196 个测试。
+203 个测试。

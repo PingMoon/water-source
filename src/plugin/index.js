@@ -19,6 +19,7 @@ import { isHer, callerOf } from './caller.js'
 import { render as renderSections } from '../assemble/sections.js'
 import { load as loadConfig } from '../config.js'
 import { registerRoutes } from './routes.js'
+import { attachAssembleFix } from './assemble-fix.js'
 
 export const name = 'water-source'
 export const VERSION = '0.1.0'
@@ -155,6 +156,13 @@ export function apply(ctx, config = {}) {
         const agent = payload?.agent ?? payload
         const off = attachTo(agent)
         if (typeof off === 'function') disposers.push(off)
+        // stripHostPrompt：摘掉宿主那段 "You are a coding agent…"（默认关）
+        try {
+          const offFix = attachAssembleFix(agent, { enabled: () => Boolean(cfgGet().stripHostPrompt), log })
+          if (typeof offFix === 'function') disposers.push(offFix)
+        } catch (err) {
+          log('组装钩子没挂上：' + String(err?.message ?? err).slice(0, 120))
+        }
       })
     }
   } catch (err) {
