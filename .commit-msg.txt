@@ -1,9 +1,18 @@
-fix(test): 补上 ingest-wire 里被遗漏的噪音样本
+fix(arch): person 是身份，不是参数
 
-上一提交（7258317）是红的——ingest-wire 里还有一条用「嗯嗯」当噪音样本，
-eval 收窄之后它变成 accept，那条断言就挂了。
+这是架构缺口，不是 bug。
 
-我提交前只看了总输出末尾，没确认全绿。这是流程错误：
-**红的不许提交**，跟代码写得对不对无关。
+我们早定过「只有她能写第一人称的话」，但实现里漏了认证：person 由调用方
+当参数填，于是任何 agent 都能往账本里塞一句「我说的」，账本上还带着
+person=first 这个凭据标记。
 
-173 个测试全绿。
+实锤：2026-11-09 账本里那条「我叫小泉…」是另一个会话里的凛写的。
+
+DSH 的 execute(args, exec) 里 exec.agent.session 带 session.id / header.cwd，
+fish 用这个做 checkCaller（tenant.js:174）。照它的判据补了 caller.js：
+  · 没配置 herSessionId → 还没有「她」自己的 agent → 一律 third
+  · 会话 id 等于 herSessionId → first
+
+她自己的话走另一条路：session/event → ingest，那是真发生过的，不经工具。
+
+173 个测试。

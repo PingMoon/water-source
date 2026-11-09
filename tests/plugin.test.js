@@ -71,11 +71,13 @@ test('remember 工具真的写进账本', async () => {
     const plugin = apply(ctx, { root: dir, tools: ['fs.read', 'fs.write', 'shell.run'], templateId: 'tp-default' })
     const tool = state.tools[0]
     const r = await tool.execute({ text: '我不太能吃辣' })
-    assert.deepEqual(r, { ok: true })
+    assert.equal(r.ok, true)
+    assert.equal(r.person, 'third', '工具调用不是她本人，只能落 third')
     const w = plugin._whale()
     const events = w.read({ types: ['utterance'] })
     assert.equal(events.length, 1)
-    assert.equal(events[0].person, 'first')
+    // 调用方不是「她」的会话时，只能落成 third —— person 是身份，不是参数
+    assert.equal(events[0].person, 'third')
     assert.equal(events[0].source, 'tool')
     plugin.dispose()
   } finally { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }

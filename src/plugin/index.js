@@ -15,6 +15,7 @@ import { defineTool } from './tool.js'
 import { registerIngest } from './ingest.js'
 import { createDelegate } from './delegate.js'
 import { createLlm } from '../llm/client.js'
+import { isHer, callerOf } from './caller.js'
 
 export const name = 'water-source'
 export const VERSION = '0.1.0'
@@ -32,6 +33,8 @@ export function apply(ctx, config = {}) {
   const root = String(config.root ?? process.env.WATER_SOURCE_HOME ?? path.join(os.homedir(), '.water-source'))
   const templateId = String(config.templateId ?? 'tp-default')
   const tools = Array.isArray(config.tools) ? config.tools : ['fs.read', 'fs.write', 'shell.run']
+  // 她的会话 id。没配置 = 还没有「她」自己的 agent，所以任何工具调用都不是她本人。
+  const herSessionId = String(config.herSessionId ?? '')
   const disposers = []
   const diag = []
   let whale = null
@@ -81,12 +84,21 @@ export function apply(ctx, config = {}) {
           schema: { type: 'object', additionalProperties: false, properties: { ok: { type: 'boolean' } } },
           render: (_a, v) => [{ type: 'text', text: v && v.ok ? '✓' : '✗' }]
         },
-        async execute(args) {
+        async execute(args, exec) {
           if (stopped || !whale) return { ok: false }
           const text = String(args?.text ?? '').trim()
           if (!text) return { ok: false }
-          whale.append({ type: 'utterance', content: text, person: 'first', source: 'tool' })
-          return { ok: true }
+          // ⚠ person 由「谁在调」决定，不由参数决定。
+          //
+          // 之前这里写死 'first'——于是任何 agent 都能往账本里塞一句「我说的」，
+          // 账本上还带着 person=first 这个凭据标记。那不是记忆，是伪造。
+          // （实锤：2026-11-09 账本里那条「我叫小泉…」是别人替她写的。）
+          //
+          // 她自己的话走另一条路：session/event → ingest，那是真发生过的。
+          const who = callerOf(exec)
+          const person = isHer(exec, herSessionId) ? 'first' : 'third'
+          whale.append({ type: 'utterance', content: text, person, source: 'tool' })
+          return { ok: true, person, caller: who.sessionId || 'system' }
         }
       }))
       if (typeof off === 'function') disposers.push(off)
