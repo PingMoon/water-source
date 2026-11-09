@@ -224,9 +224,29 @@ export function apply(ctx, config = {}) {
     try {
       const dir = path.join(os.homedir(), '.dsh')
       mkdirSync(dir, { recursive: true })
+      // 注册之后 webServer 内部到底记了什么——这是决定性证据
+      let diag = ''
+      try {
+        // 决定性自检：注册完之后，这个 webServer 自己认不认这条路由
+        try {
+          const m = typeof webServer?.match === 'function' ? webServer.match('/water-source/state') : undefined
+          diag += ' selfMatch=' + (m ? ('命中:' + String(m.path ?? '')) : '未命中')
+          if (webServer?.prefixes instanceof Map) diag += ' prefixesKeys=' + JSON.stringify([...webServer.prefixes.keys()])
+        } catch (e) { diag += ' selfMatch抛错:' + String(e?.message ?? e).slice(0, 60) }
+        const pf = webServer?.prefixes
+        const ex = webServer?.exact
+        const dump = (x) => {
+          if (!x) return String(x)
+          if (Array.isArray(x)) return 'arr[' + x.length + ']:' + JSON.stringify(x).slice(0, 600)
+          if (x instanceof Map) return 'map[' + x.size + ']:' + JSON.stringify([...x.keys()]).slice(0, 600)
+          if (typeof x === 'object') return 'obj:' + JSON.stringify(Object.keys(x)).slice(0, 400)
+          return String(x)
+        }
+        diag = ' prefixes=' + dump(pf) + ' exact=' + dump(ex)
+      } catch (e) { diag = ' dump失败:' + String(e?.message ?? e).slice(0, 80) }
       appendFileSync(path.join(dir, 'water-source-route.log'),
-        new Date().toISOString() + ' webServer=' + (webServer ? Object.keys(webServer).join('|') : 'null') +
-        ' register=' + typeof webServer?.register + ' routeOk=' + routeOk + '\n')
+        new Date().toISOString() + ' webServer=' + (webServer ? 'yes' : 'null') +
+        ' register=' + typeof webServer?.register + ' routeOk=' + routeOk + diag + '\n')
     } catch { /* ignore */ }
   } catch (err) {
     log('路由没挂上：' + String(err?.message ?? err).slice(0, 160))

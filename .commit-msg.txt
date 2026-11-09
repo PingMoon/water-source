@@ -1,13 +1,16 @@
-fix(routes): 路由其实注册成功了——加请求日志定位 404 真因
+chore(diag): 注册后自检 match + dump prefixes 键
 
-诊断文件说话了：
-  05:06:38 webServer=null routeOk=false   ×4（早期几次 apply）
-  05:07:10 register=function routeOk=true ×1（最后一次成功）
+现在的证据链：
+  · register 是函数、调用不抛错（routeOk=true）
+  · 但所有端口 /water-source/state 都是 404 空 body
+  · 空 body 说明**不是我的 handler 返回的**——我的 handler 一律返回 JSON
 
-所以 404 不是注册失败，是请求没进 handler 或者进来了被我自己 404 掉。
+所以要么注册进了另一个 webServer 实例，要么 match 表里没有它。
+这轮加：注册完立刻调 webServer.match('/water-source/state') 自检，并 dump prefixes 键。
 
-这轮加两样：
-  1. 每个进到 handler 的请求写 ~/.dsh/water-source-http.log
-  2. 根路径 / 回落到 /state（之前忘了处理）
+顺便记下读到的宿主实现（asar 提取，dsh-host-webserver/lib/index.js）：
+  register(route) → table.set(route.path, route)
+  match(pathname) → exact 先查，再最长前缀；条件是 pathname === prefix 或以 prefix + '/' 开头
+  dispatch → responder.handler(req, res)（Node 原生签名）
 
-下次访问一下就看得到请求到底有没有到。
+判据和我的用法一致，所以问题不在写法，在「注册到哪个实例」。
