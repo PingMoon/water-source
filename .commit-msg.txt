@@ -1,12 +1,17 @@
-feat: 分会话开关 + 账本归零（只留 seed）
+feat: 设置页（对齐 dsh-fish 的 settings.section）
 
-两件事：
-1. 账本清空到只剩 seed（48 → 1）。原库备份在 ~/.water-source/ledger.db.bak-full-*。
-   这是用户明确授权的一次性运维操作，触发器显式关掉再删，之后由迁移重建。
-2. 分会话开关：herSessionId 填了，就只记那一间房；装配也只摆那间的事。
-   留空 = 不隔离。
+三块：
+1. src/config.js —— 运行时可改的配置（白名单校验 + 原子写）
+2. src/plugin/routes.js —— /water-source/{config,state} JSON API
+3. src/plugin/client.js —— 「设置 → 水之源」一节
 
-为什么：账本是她的经历。混进对别人说的话，她就会以为自己被那样说过。
-2026-11-09 实锤过——「可以」「清掉」全进了她的账本。
+为什么是设置页不是独立 HTML：宿主 connection 的信任栅栏要 App 内 cookie，
+浏览器直接开 /water-source 会 401；设置页里同源 fetch 是通的（fish 踩出来的）。
 
-184 个测试。
+红线：页面里没有任何「你是什么性格」的输入框。
+只改环境：名字、称呼、分会话、摘宿主 prompt 的开关（默认关）。
+
+测试里钉了一条：loader id 必须等于 package.json 的 name——对不齐浏览器那半边
+会静默不加载，宿主照常跑、设置页空着，比崩还难查。
+
+196 个测试。

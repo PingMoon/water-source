@@ -17,15 +17,17 @@ import { createDelegate } from './delegate.js'
 import { createLlm } from '../llm/client.js'
 import { isHer, callerOf } from './caller.js'
 import { render as renderSections } from '../assemble/sections.js'
+import { load as loadConfig } from '../config.js'
+import { registerRoutes } from './routes.js'
 
 export const name = 'water-source'
 export const VERSION = '0.1.0'
 
 /** 一个数组写全。缺哪个服务，插件就不会被加载——所以只列真正需要的。 */
 // ⚠ 只列**必须存在**的服务：缺一个，整个插件不会被加载。
-// systemPrompt / agents 走可选探测（agent.ctx.systemPrompt?.context、ctx.agents?.list），
-// 写进 inject 反而会把「少一个功能」放大成「插件不装」。
-export const inject = ['tools']
+// systemPrompt / agents 走可选探测（agent.ctx.systemPrompt?.context、ctx.agents?.list）。
+// webServer 列进来是要注册设置页的 JSON 路由——fish 也列了，说明宿主一定有。
+export const inject = ['tools', 'webServer']
 
 const MEMORY_SECTION = 'water-source-memory'
 const REMEMBER_TOOL = 'remember'
@@ -35,10 +37,18 @@ export function apply(ctx, config = {}) {
   const templateId = String(config.templateId ?? 'tp-default')
   const tools = Array.isArray(config.tools) ? config.tools : ['fs.read', 'fs.write', 'shell.run']
   // 她的会话 id。没配置 = 还没有「她」自己的 agent，所以任何工具调用都不是她本人。
-  const herSessionId = String(config.herSessionId ?? '')
+  const herSessionId = () => liveCfg.herSessionId
   // 她叫什么、管主人叫什么。**从配置来**，不写死在代码里——名字是她被赋予的，不是代码施舍的。
-  const herName = String(config.herName ?? '')
-  const ownerName = String(config.ownerName ?? '')
+  // 部署时给的值是**默认值**，运行时可改的以 ~/.water-source/config.json 为准
+  const bootCfg = loadConfig(root)
+  const defaults = {
+    herName: String(config.herName ?? bootCfg.herName ?? ''),
+    ownerName: String(config.ownerName ?? bootCfg.ownerName ?? ''),
+    herSessionId: String(config.herSessionId ?? bootCfg.herSessionId ?? ''),
+    stripHostPrompt: Boolean(config.stripHostPrompt ?? bootCfg.stripHostPrompt ?? false)
+  }
+  let liveCfg = { ...bootCfg, ...defaults }
+  const cfgGet = () => liveCfg
   const disposers = []
   const diag = []
   let whale = null
@@ -100,7 +110,7 @@ export function apply(ctx, config = {}) {
           //
           // 她自己的话走另一条路：session/event → ingest，那是真发生过的。
           const who = callerOf(exec)
-          const person = isHer(exec, herSessionId) ? 'first' : 'third'
+          const person = isHer(exec, herSessionId()) ? 'first' : 'third'
           whale.append({ type: 'utterance', content: text, person, source: 'tool' })
           return { ok: true, person, caller: who.sessionId || 'system' }
         }
@@ -125,7 +135,8 @@ export function apply(ctx, config = {}) {
         text: () => {
           if (stopped || !whale?.db) return ''
           try {
-            return renderSections(whale.db, { name: herName, ownerName, room: herSessionId, now: Date.now() }).text
+            const c = cfgGet()
+            return renderSections(whale.db, { name: c.herName, ownerName: c.ownerName, room: c.herSessionId, now: Date.now() }).text
           } catch (err) {
             log('装配失败：' + String(err?.message ?? err).slice(0, 120))
             return ''
@@ -180,9 +191,27 @@ export function apply(ctx, config = {}) {
     log('delegate 没挂上：' + String(err?.message ?? err).slice(0, 160))
   }
 
+  // ---- 设置页的 JSON API ----
+  try {
+    const offRoutes = registerRoutes(ctx.webServer, {
+      root: () => root,
+      getWhale: () => whale,
+      version: () => VERSION,
+      onConfigChanged: (next) => {
+        liveCfg = { ...liveCfg, ...next }
+        log('配置已更新：' + JSON.stringify(next))
+      },
+      log
+    })
+    if (typeof offRoutes === 'function') disposers.push(offRoutes)
+    log('路由已注册: /water-source/{config,state}')
+  } catch (err) {
+    log('路由没挂上：' + String(err?.message ?? err).slice(0, 160))
+  }
+
   // ---- 自动 ingest：真人说的话自己进流水线 ----
   try {
-    const offIngest = registerIngest(ctx, { whale, log, herSessionId })
+    const offIngest = registerIngest(ctx, { whale, log, herSessionId: herSessionId() })
     if (typeof offIngest === 'function') disposers.push(offIngest)
     log('已挂 session/event 观察者')
   } catch (err) {

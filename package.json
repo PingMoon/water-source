@@ -16,7 +16,7 @@
   "license": "UNLICENSED",
   "exports": {
     ".": "./src/plugin/index.js",
-    "./core": "./src/core/service.js",
+    "./client": "./src/plugin/client.js",
     "./package.json": "./package.json"
   },
   "dsh": {
