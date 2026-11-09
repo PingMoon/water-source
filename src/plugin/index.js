@@ -200,8 +200,15 @@ export function apply(ctx, config = {}) {
   }
 
   // ---- 设置页的 JSON API ----
+  // ⚠ 服务要用 ctx.get('webServer') 取——照 dsh-fish 的 safeGet。
+  // 直接写 ctx.webServer 在 Cordis 4 里可能是 undefined，而且**静默**：
+  // registerRoutes 收到 null 就 return 空函数，日志照打「已注册」，请求一律 404。
   try {
-    const offRoutes = registerRoutes(ctx.webServer, {
+    let webServer = null
+    try { webServer = typeof ctx.get === 'function' ? ctx.get('webServer') : null } catch { webServer = null }
+    if (!webServer) webServer = ctx.webServer ?? null
+    log('webServer: ' + (webServer ? (typeof webServer.register) : '缺失'))
+    const offRoutes = registerRoutes(webServer, {
       root: () => root,
       getWhale: () => whale,
       version: () => VERSION,
@@ -212,7 +219,15 @@ export function apply(ctx, config = {}) {
       log
     })
     if (typeof offRoutes === 'function') disposers.push(offRoutes)
-    log('路由已注册: /water-source/{config,state}')
+    const routeOk = Boolean(webServer?.register)
+    log('路由' + (routeOk ? '已注册' : '没注册（webServer.register 不存在）') + ': /water-source/{config,state}')
+    try {
+      const dir = path.join(os.homedir(), '.dsh')
+      mkdirSync(dir, { recursive: true })
+      appendFileSync(path.join(dir, 'water-source-route.log'),
+        new Date().toISOString() + ' webServer=' + (webServer ? Object.keys(webServer).join('|') : 'null') +
+        ' register=' + typeof webServer?.register + ' routeOk=' + routeOk + '\n')
+    } catch { /* ignore */ }
   } catch (err) {
     log('路由没挂上：' + String(err?.message ?? err).slice(0, 160))
   }

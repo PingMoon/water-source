@@ -1,14 +1,12 @@
-feat: stripHostPrompt 实现（摘掉宿主那段 coding agent 人设）
+fix(routes): 用 ctx.get('webServer') 取服务，并把注册结果写盘
 
-宿主 deployment:persona-prefix 那段 'You are a coding agent…' 有好几千字，
-排在所有插件段前面。模型先认下那句空话，再读到她是谁——一半是编码助手，一半是小泉。
+404 还没解决。这轮做了两件事：
 
-做法照 dsh-fish identity.js:271 的 attachAssembleFix：
-  · 事件 system-prompt/assemble 是 waterfall，必须 await next()
-  · prepend: true 排最外层先跑，拿到宿主组装结果再整改
-  · 整改失败**原样放行**——链断了她一整轮读不到任何系统提示词
+1. 取服务改成 Cordis 4 的方式 ctx.get('webServer')（照 fish 的 safeGet）。
+   直接写 ctx.webServer 可能是 undefined，而 registerRoutes 收到 null 就返回空函数——
+   日志照打「已注册」，请求一律 404。
 
-开关是函数（enabled: () => cfg.stripHostPrompt），设置页改完下一轮就生效。
-默认关：它动的是宿主，不是我们自己的地盘。
+2. 注册结果写 ~/.dsh/water-source-route.log：webServer 有哪些键、register 是不是函数。
+   下次重启一眼能看到卡在哪一步，不用再猜。
 
 203 个测试。
