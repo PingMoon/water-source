@@ -1,17 +1,14 @@
-fix(ui): 颜色批替换把引号吃掉了，导致整个 App 起不来
+feat(preset): 小泉自己的 agent preset（lily）
 
-用户判断准确：崩溃是我改颜色时引入的。
+从内置 preset-cordis 整份复制，改两处：
+1. persona 的 prefix：从「You are a coding agent」换成她的存在边界；
+2. 把 water-source 挂进她自己的 preset，不再挂 profile 级 bundles。
 
-我把 '#c0392b' 这样**带引号的字符串**批替换成了 var(--dsw-alias-label-error, #c0392b)，
-引号没了 —— 于是 JSX 里出现裸的 var(...)，
+为什么要这么改：
+preset 的 plugins 是「这个 agent 挂哪些插件」的**全部**清单。
+挂在 profile 级 = 所有 agent 都有 → 小泉的身份注入污染了别的会话。
+挂进 preset = 只有选了这个 preset 的会话才是她。
 
-  SyntaxError: Unexpected token 'var'   （client.js:104）
+同时从 bundles 里摘掉 @local/water-source。
 
-client 模块解析失败，宿主在启动阶段就崩了，不是你白屏那种小事。
-
-修：所有 var(--x) 都放回字符串字面量里。
-并加一条测试——new Function(src) 直接扔语法错，这类错不该再靠崩溃发现。
-
-教训：批量正则替换字符串字面量时，替换值必须自带引号。
-
-204 个测试。
+附带：stripHostPrompt 可以退休了——从源头就不注入那句 coding agent。
