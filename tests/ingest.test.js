@@ -56,15 +56,23 @@ test('不同房间互不干扰', () => {
   } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })
 
-test('噪音被丢弃，但留下可见记录', () => {
+test('语气词不再被丢（2026-11-09 收窄：只挡语法上空的东西）', () => {
   const { w, dir } = fresh()
   try {
     const r = w.ingest('嗯嗯', { room: 'desk', now: 1000 })
+    assert.equal(r.decision, 'accept', '「嗯」也是话，记下来')
+  } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
+})
+
+test('噪音被丢弃，但留下可见记录', () => {
+  const { w, dir } = fresh()
+  try {
+    const r = w.ingest('。。。', { room: 'desk', now: 1000 })
     assert.equal(r.decision, 'drop')
     assert.ok(r.visible.includes('没接'))
     const drops = w.drops()
     assert.equal(drops.length, 1)
-    assert.equal(drops[0].rule, 'ack')
+    assert.equal(drops[0].rule, 'punctuation')
     assert.equal(w.read({ types: ['utterance'] }).length, 0, '被丢的不该进账本')
   } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
 })

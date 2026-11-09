@@ -69,7 +69,7 @@ test('判断：活跃线索 → 旁路，不看内容', () => {
 })
 
 test('判断：噪音 → 丢，而且给一句可见的话', () => {
-  for (const s of ['', '   ', '。。。', '嗯嗯', '哈哈哈', '🥲']) {
+  for (const s of ['', '   ', '。。。', '……', '🥲']) {
     const ev = evaluate({ text: s })
     assert.equal(ev.decision, DECISION.DROP, '没丢：' + JSON.stringify(s))
     assert.ok(ev.visible.length > 0, '丢了但没话说：' + JSON.stringify(s))
