@@ -1,14 +1,16 @@
-fix(ui): 换宿主真实存在的 CSS 变量，暗色主题下看得清
+fix: 崩溃兜底——next() 也包 try，apply 整体捕获并写盘
 
-我之前写的 --dsw-text / --dsw-border / --dsw-bg **全是不存在的**，
-于是 fallback 到深色字 + 暗色背景，暗色主题下看不清。
+崩溃时的路由日志是干净的：
+  register 返回=function prefixesAfter=[/plugins,/water-source] selfMatch=hit
+说明路由注册没问题，崩在别处。
 
-真实变量（从 dsh-fish client.js 挖出来的）：
-  --dsw-alias-label-primary / -secondary / -tertiary
-  --dsw-alias-border-l2 / -l3
-  --dsw-alias-bg-layer-1 / bg-l1
-  --dsw-alias-label-error
-  --dsw-alias-state-business-primary
+但 DSH 没有留下任何日志文件，所以看不到崩在哪。
+这轮加两层兜底：
+1. system-prompt/assemble 里的 next() 也包 try——它抛错会把整条 waterfall 带走，
+   结果是她一整轮读不到任何系统提示词。
+2. apply 整体包 try/catch，任何漏网异常写 ~/.dsh/water-source-crash.log，
+   并返回空 dispose——插件坏掉不能把宿主带走。
 
-fallback 也改了：文字用 inherit（继承宿主，永远对），边框用 currentColor。
-输入框和按钮用低一层背景 bg-l1，暗色下才和容器分得开。
+顺便修 crashNote 里误用的 require（ESM 里没有）。
+
+203 个测试。

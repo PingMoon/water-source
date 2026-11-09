@@ -33,7 +33,27 @@ export const inject = ['tools', 'webServer']
 const MEMORY_SECTION = 'water-source-memory'
 const REMEMBER_TOOL = 'remember'
 
+/** 兜底：apply 里任何漏网的异常都写盘，别把宿主带走 */
+function crashNote(err) {
+  try {
+    const dir = path.join(os.homedir(), '.dsh')
+    mkdirSync(dir, { recursive: true })
+    appendFileSync(path.join(dir, 'water-source-crash.log'),
+      new Date().toISOString() + ' ' + String(err?.message ?? err) + '\n' +
+      String(err?.stack ?? '').split('\n').slice(0, 8).join('\n') + '\n')
+  } catch { /* 连日志都写不了就真的没办法 */ }
+}
+
 export function apply(ctx, config = {}) {
+  try {
+    return applyInner(ctx, config)
+  } catch (err) {
+    crashNote(err)
+    return { dispose() {} }
+  }
+}
+
+function applyInner(ctx, config = {}) {
   const root = String(config.root ?? process.env.WATER_SOURCE_HOME ?? path.join(os.homedir(), '.water-source'))
   const templateId = String(config.templateId ?? 'tp-default')
   const tools = Array.isArray(config.tools) ? config.tools : ['fs.read', 'fs.write', 'shell.run']

@@ -42,7 +42,15 @@ export function attachAssembleFix(agent, { enabled = () => true, log = () => {} 
   if (!ctx || typeof ctx.on !== 'function') return undefined
   try {
     const off = ctx.on('system-prompt/assemble', async (_assembly, _context, next) => {
-      const assembled = await next()
+      // ⚠ next() 也必须包进 try：它抛错会把整条 waterfall 带走，
+      // 结果是她一整轮读不到任何系统提示词——比「coding agent 排在前面」糟得多。
+      let assembled
+      try {
+        assembled = await next()
+      } catch (err) {
+        log('next() 失败（原样放行）：' + String(err?.message ?? err).slice(0, 120))
+        return _assembly
+      }
       // 开关是函数：设置页改完下一轮就生效，不用重建会话
       try {
         if (!enabled()) return assembled
