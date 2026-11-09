@@ -1,18 +1,14 @@
-fix(routes): 根因是 this 丢失——register 不能解构出来单独调
+fix(ui): 换宿主真实存在的 CSS 变量，暗色主题下看得清
 
-诊断日志是决定性的：
-  webServer=yes register=function routeOk=true
-  prefixes=map[1]:["/plugins"]     ← 注册完表里只有宿主自己的 /plugins
+我之前写的 --dsw-text / --dsw-border / --dsw-bg **全是不存在的**，
+于是 fallback 到深色字 + 暗色背景，暗色主题下看不清。
 
-写成 const add = webServer.register; add(route) 时，this 是 undefined。
-而宿主实现是 register(route){ const table = route.kind === 'exact' ? this.exact : this.prefixes; ... }
-—— this 一丢就抛错，被我的 try/catch 吞掉，静默返回空函数。
+真实变量（从 dsh-fish client.js 挖出来的）：
+  --dsw-alias-label-primary / -secondary / -tertiary
+  --dsw-alias-border-l2 / -l3
+  --dsw-alias-bg-layer-1 / bg-l1
+  --dsw-alias-label-error
+  --dsw-alias-state-business-primary
 
-所以「路由已注册」这句日志是假的：routeOk 只判断 register 是不是函数，
-根本没判断注册有没有成功。注册失败从头到尾一个字都没留。
-
-修：webServer.register(route) 直接调，保住 this。
-并把「造 handler」和「注册」拆开（createRoutesHandler / registerRoutes），
-猜错时至少能确定是哪一半。
-
-203 个测试。
+fallback 也改了：文字用 inherit（继承宿主，永远对），边框用 currentColor。
+输入框和按钮用低一层背景 bg-l1，暗色下才和容器分得开。

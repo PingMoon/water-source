@@ -28,17 +28,17 @@ window.__ModuleLoader__.load({
     const NS = 'water-source'
 
     const S = {
-      wrap: { padding: '18px 22px', maxWidth: 780, fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-text, #1b2430)' },
+      wrap: { padding: '18px 22px', maxWidth: 780, fontSize: 13, lineHeight: 1.7, color: 'var(--dsw-alias-label-primary, inherit)' },
       h1: { fontSize: 16, fontWeight: 600, margin: '0 0 2px' },
-      sub: { fontSize: 12, color: 'var(--dsw-text-muted, #5b6675)', margin: '0 0 18px' },
-      box: { border: '1px solid var(--dsw-border, #dfe6ef)', borderRadius: 8, padding: '14px 16px', marginBottom: 14 },
+      sub: { fontSize: 12, color: 'var(--dsw-alias-label-secondary, inherit)', margin: '0 0 18px' },
+      box: { border: '1px solid var(--dsw-alias-border-l2, currentColor)', borderRadius: 8, padding: '14px 16px', marginBottom: 14 },
       label: { display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 },
-      hint: { fontSize: 11.5, color: 'var(--dsw-text-muted, #5b6675)', marginBottom: 8 },
-      input: { width: '100%', boxSizing: 'border-box', padding: '7px 9px', borderRadius: 6, border: '1px solid var(--dsw-border, #dfe6ef)', fontSize: 13, background: 'var(--dsw-bg, #fff)', color: 'inherit' },
+      hint: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary, inherit)', marginBottom: 8 },
+      input: { width: '100%', boxSizing: 'border-box', padding: '7px 9px', borderRadius: 6, border: '1px solid var(--dsw-alias-border-l2, currentColor)', fontSize: 13, background: 'var(--dsw-alias-bg-l1, transparent)', color: 'inherit' },
       row: { display: 'flex', gap: 10, alignItems: 'center', marginTop: 10 },
-      btn: { padding: '6px 14px', borderRadius: 6, border: '1px solid var(--dsw-border, #dfe6ef)', background: 'var(--dsw-bg, #fff)', color: 'inherit', cursor: 'pointer', fontSize: 12.5 },
-      pre: { background: 'var(--dsw-code-bg, #f6f8fb)', border: '1px solid var(--dsw-border, #dfe6ef)', borderRadius: 6, padding: '10px 12px', fontSize: 12, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, maxHeight: 320, overflow: 'auto' },
-      tag: { display: 'inline-block', padding: '1px 7px', borderRadius: 999, fontSize: 11, border: '1px solid var(--dsw-border, #dfe6ef)', marginRight: 6 }
+      btn: { padding: '6px 14px', borderRadius: 6, border: '1px solid var(--dsw-alias-border-l2, currentColor)', background: 'var(--dsw-alias-bg-l1, transparent)', color: 'inherit', cursor: 'pointer', fontSize: 12.5 },
+      pre: { background: 'var(--dsw-alias-bg-l1, rgba(127,127,127,0.08))', border: '1px solid var(--dsw-alias-border-l2, currentColor)', borderRadius: 6, padding: '10px 12px', fontSize: 12, whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, maxHeight: 320, overflow: 'auto' },
+      tag: { display: 'inline-block', padding: '1px 7px', borderRadius: 999, fontSize: 11, border: '1px solid var(--dsw-alias-border-l2, currentColor)', marginRight: 6 }
     }
 
     async function jget(p) {
@@ -101,7 +101,7 @@ window.__ModuleLoader__.load({
         } finally { setBusy(false) }
       }, [draft, reload])
 
-      if (err && !cfg) return h('div', { style: S.wrap }, h('div', { style: S.h1 }, '水之源'), h('div', { style: { color: '#c0392b' } }, err))
+      if (err && !cfg) return h('div', { style: S.wrap }, h('div', { style: S.h1 }, '水之源'), h('div', { style: { color: var(--dsw-alias-label-error, #c0392b) } }, err))
 
       const dirty = cfg && draft && JSON.stringify(cfg) !== JSON.stringify(draft)
 
@@ -146,8 +146,8 @@ window.__ModuleLoader__.load({
         h('div', { style: S.row },
           h('button', { style: { ...S.btn, opacity: busy || !dirty ? 0.5 : 1 }, disabled: busy || !dirty, onClick: save }, busy ? '保存中…' : '保存'),
           dirty ? h('span', { style: { fontSize: 11.5, color: '#d97706' } }, '有未保存的改动') : null,
-          note ? h('span', { style: { fontSize: 11.5, color: '#178f7e' } }, note) : null,
-          err ? h('span', { style: { fontSize: 11.5, color: '#c0392b' } }, err) : null
+          note ? h('span', { style: { fontSize: 11.5, color: var(--dsw-alias-state-business-primary, #178f7e) } }, note) : null,
+          err ? h('span', { style: { fontSize: 11.5, color: var(--dsw-alias-label-error, #c0392b) } }, err) : null
         ),
 
         // ---- 她现在读到什么 ----
@@ -166,7 +166,7 @@ window.__ModuleLoader__.load({
             : h('div', { style: S.hint }, state?.error || '读不到状态')
         ),
 
-        h('div', { style: { fontSize: 11.5, color: 'var(--dsw-text-muted, #5b6675)', marginTop: 4 } },
+        h('div', { style: { fontSize: 11.5, color: 'var(--dsw-alias-label-secondary, inherit)', marginTop: 4 } },
           '改根目录、工具面、模板要走 cordis.patch.yml 并重启宿主——那些是部署时的决定，不在这个页面。'
         )
       )
