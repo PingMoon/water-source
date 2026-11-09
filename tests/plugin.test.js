@@ -99,16 +99,18 @@ test('agent 创建后挂上 systemPrompt.context；有记忆时出内容，停�
     assert.equal(sections[0].name, 'water-source-memory')
     assert.equal(sections[0].interpolate, false, '必须是纯文本，不许被当模板解析')
 
-    // 空记忆 → 空串
-    assert.equal(sections[0].text(), '')
+    // 装配层从第一天就有内容：身份 + 现在（不依赖 any meaning）
+    const day1 = sections[0].text()
+    assert.ok(day1.includes('## 你是谁'), '身份段必须在')
+    assert.ok(day1.includes('## 现在'), '现在段必须在')
+    assert.ok(!day1.includes('## 他最近说过'), '没有材料时不该编出一段')
 
-    // 写一条 meaning → 出现
+    // 有他的话 → 出现「他最近说过」
     const w = plugin._whale()
-    const base = w.append({ type: 'worker_material', content: 'JEV 在序列决策上只有 35%' })
-    w.append({ type: 'meaning', content: '我不敢拿它去做长链决策', refs: [base.id] })
+    w.ingest('我把那个方案先放着了', { room: 'desk', now: Date.now() })
     const out = sections[0].text()
-    assert.ok(out.includes('你记得的事'))
-    assert.ok(out.includes('我不敢拿它去做长链决策'))
+    assert.ok(out.includes('## 他最近说过'), '有材料就该摆出来')
+    assert.ok(out.includes('我把那个方案先放着了'), '原话要原样出现')
 
     plugin.dispose()
     assert.equal(sections[0].text(), '', '停用后不该再注入')

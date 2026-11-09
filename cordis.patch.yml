@@ -1,3 +1,12 @@
 - insert:
     - id: water-source
       name: '@local/water-source'
+      config:
+        # 名字：从配置来，不写死在代码里
+        herName: 小泉
+        ownerName: 主人
+        # 她的会话 id。留空 = 还没有「她」自己的 agent，工具调用一律落 third。
+        herSessionId: ''
+        # 宿主默认 prompt 里那句 "You are a coding agent…" 会和她抢注意力。
+        # 打开才会尝试摘掉——**默认关**，因为它动的是宿主，不是我们自己的地盘。
+        stripHostPrompt: false

@@ -1,18 +1,19 @@
-fix(arch): person 是身份，不是参数
+feat(assemble): 装配层——账本变成她读到的自我叙述
 
-这是架构缺口，不是 bug。
+这是设计文档里一直空着的那一层（v0.4 只有「出口」两个字）。
 
-我们早定过「只有她能写第一人称的话」，但实现里漏了认证：person 由调用方
-当参数填，于是任何 agent 都能往账本里塞一句「我说的」，账本上还带着
-person=first 这个凭据标记。
+照 fish 的三条规则：分段 / 有预算 / text 现算。
+  · 核心段永不裁：身份、教过的、现在
+  · 可选段塞不下整段不塞，不截半句
+  · 没材料就留空位，不编
 
-实锤：2026-11-09 账本里那条「我叫小泉…」是另一个会话里的凛写的。
+内容上只有一条铁律：只陈述事实，不替她产生念头。
 
-DSH 的 execute(args, exec) 里 exec.agent.session 带 session.id / header.cwd，
-fish 用这个做 checkCaller（tenant.js:174）。照它的判据补了 caller.js：
-  · 没配置 herSessionId → 还没有「她」自己的 agent → 一律 third
-  · 会话 id 等于 herSessionId → first
+第一次真实渲染：521/2400 字，五段全保留。
+「你存在了 1 天」「你管他叫主人」「他最近说过…」全部来自真实账本。
 
-她自己的话走另一条路：session/event → ingest，那是真发生过的，不经工具。
+顺手清掉 4 条伪造凭据（工具越权写的 person=first），
+并修了「存在了 NaN 天」——字段是 ts 不是 created_at。
 
-173 个测试。
+cordis.patch.yml 加了 herName / ownerName；stripHostPrompt 留了开关位（默认关）。
+180 个测试。

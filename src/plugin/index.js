@@ -16,6 +16,7 @@ import { registerIngest } from './ingest.js'
 import { createDelegate } from './delegate.js'
 import { createLlm } from '../llm/client.js'
 import { isHer, callerOf } from './caller.js'
+import { render as renderSections } from '../assemble/sections.js'
 
 export const name = 'water-source'
 export const VERSION = '0.1.0'
@@ -35,6 +36,9 @@ export function apply(ctx, config = {}) {
   const tools = Array.isArray(config.tools) ? config.tools : ['fs.read', 'fs.write', 'shell.run']
   // 她的会话 id。没配置 = 还没有「她」自己的 agent，所以任何工具调用都不是她本人。
   const herSessionId = String(config.herSessionId ?? '')
+  // 她叫什么、管主人叫什么。**从配置来**，不写死在代码里——名字是她被赋予的，不是代码施舍的。
+  const herName = String(config.herName ?? '')
+  const ownerName = String(config.ownerName ?? '')
   const disposers = []
   const diag = []
   let whale = null
@@ -116,15 +120,16 @@ export function apply(ctx, config = {}) {
         name: MEMORY_SECTION,
         order: 900,
         interpolate: false,
+        // 现算：事件变了下一轮就跟上，不用重建会话。
+        // 内容来自装配层（src/assemble/sections.js），不是 derive 出来的结论。
         text: () => {
-          if (stopped || !whale) return ''
+          if (stopped || !whale?.db) return ''
           try {
-            const model = whale.state()
-            const lines = (model.topBeliefs || []).map((b) => '- ' + String(b.text))
-            const folded = whale.folded()
-            if (!lines.length) return ''
-            return ['【你记得的事】', ...lines, folded ? '- ' + folded : ''].filter(Boolean).join('\n')
-          } catch { return '' }
+            return renderSections(whale.db, { name: herName, ownerName, now: Date.now() }).text
+          } catch (err) {
+            log('装配失败：' + String(err?.message ?? err).slice(0, 120))
+            return ''
+          }
         }
       })
     } catch (err) {
