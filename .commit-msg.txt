@@ -1,16 +1,17 @@
-fix: 崩溃兜底——next() 也包 try，apply 整体捕获并写盘
+fix(ui): 颜色批替换把引号吃掉了，导致整个 App 起不来
 
-崩溃时的路由日志是干净的：
-  register 返回=function prefixesAfter=[/plugins,/water-source] selfMatch=hit
-说明路由注册没问题，崩在别处。
+用户判断准确：崩溃是我改颜色时引入的。
 
-但 DSH 没有留下任何日志文件，所以看不到崩在哪。
-这轮加两层兜底：
-1. system-prompt/assemble 里的 next() 也包 try——它抛错会把整条 waterfall 带走，
-   结果是她一整轮读不到任何系统提示词。
-2. apply 整体包 try/catch，任何漏网异常写 ~/.dsh/water-source-crash.log，
-   并返回空 dispose——插件坏掉不能把宿主带走。
+我把 '#c0392b' 这样**带引号的字符串**批替换成了 var(--dsw-alias-label-error, #c0392b)，
+引号没了 —— 于是 JSX 里出现裸的 var(...)，
 
-顺便修 crashNote 里误用的 require（ESM 里没有）。
+  SyntaxError: Unexpected token 'var'   （client.js:104）
 
-203 个测试。
+client 模块解析失败，宿主在启动阶段就崩了，不是你白屏那种小事。
+
+修：所有 var(--x) 都放回字符串字面量里。
+并加一条测试——new Function(src) 直接扔语法错，这类错不该再靠崩溃发现。
+
+教训：批量正则替换字符串字面量时，替换值必须自带引号。
+
+204 个测试。

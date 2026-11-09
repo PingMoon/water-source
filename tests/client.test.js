@@ -14,6 +14,12 @@ import { readFileSync } from 'node:fs'
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
 const src = readFileSync(new URL('../src/plugin/client.js', import.meta.url), 'utf8')
 
+test('client.js 必须是合法 JS（2026-11-09 崩过一次，整个 App 起不来）', () => {
+  // 浏览器那半边解析失败不会只白屏——宿主启动阶段崩掉。
+  // 真机事故：把 '#c0392b' 批替换成 var(--x, #c0392b)，引号没了，Unexpected token 'var'。
+  assert.doesNotThrow(() => new Function(src), 'client.js 有语法错误')
+})
+
 test('loader id 等于包名（对不齐浏览器那半边会静默不加载）', () => {
   const m = src.match(/id:\s*'([^']+)'/)
   assert.ok(m, '没找到 id')

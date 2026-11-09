@@ -101,7 +101,7 @@ window.__ModuleLoader__.load({
         } finally { setBusy(false) }
       }, [draft, reload])
 
-      if (err && !cfg) return h('div', { style: S.wrap }, h('div', { style: S.h1 }, '水之源'), h('div', { style: { color: var(--dsw-alias-label-error, #c0392b) } }, err))
+      if (err && !cfg) return h('div', { style: S.wrap }, h('div', { style: S.h1 }, '水之源'), h('div', { style: { color: 'var(--dsw-alias-label-error, #c0392b)' } }, err))
 
       const dirty = cfg && draft && JSON.stringify(cfg) !== JSON.stringify(draft)
 
@@ -146,8 +146,8 @@ window.__ModuleLoader__.load({
         h('div', { style: S.row },
           h('button', { style: { ...S.btn, opacity: busy || !dirty ? 0.5 : 1 }, disabled: busy || !dirty, onClick: save }, busy ? '保存中…' : '保存'),
           dirty ? h('span', { style: { fontSize: 11.5, color: '#d97706' } }, '有未保存的改动') : null,
-          note ? h('span', { style: { fontSize: 11.5, color: var(--dsw-alias-state-business-primary, #178f7e) } }, note) : null,
-          err ? h('span', { style: { fontSize: 11.5, color: var(--dsw-alias-label-error, #c0392b) } }, err) : null
+          note ? h('span', { style: { fontSize: 11.5, color: 'var(--dsw-alias-state-business-primary, #178f7e)' } }, note) : null,
+          err ? h('span', { style: { fontSize: 11.5, color: 'var(--dsw-alias-label-error, #c0392b)' } }, err) : null
         ),
 
         // ---- 她现在读到什么 ----
