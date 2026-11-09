@@ -1,14 +1,15 @@
-feat(preset): 小泉自己的 agent preset（lily）
+feat(ui): 设置页 P0——状态 / 记忆 / 住所 / 插件
 
-从内置 preset-cordis 整份复制，改两处：
-1. persona 的 prefix：从「You are a coding agent」换成她的存在边界；
-2. 把 water-source 挂进她自己的 preset，不再挂 profile 级 bundles。
+按 docs/SETTINGS-DESIGN.md 的设计做，对标 fish 的按「生活的面」分页。
 
-为什么要这么改：
-preset 的 plugins 是「这个 agent 挂哪些插件」的**全部**清单。
-挂在 profile 级 = 所有 agent 都有 → 小泉的身份注入污染了别的会话。
-挂进 preset = 只有选了这个 preset 的会话才是她。
+四页：
+  · 状态：她此刻读到什么（装配全文 + 预算）、账本按类型。只读，唯一的验收工具。
+  · 记忆：她说过的话 / 他最近说过 / 被标记遗忘的。只读，没有删除按钮。
+  · 住所：数据目录、账本与 WAL 大小、herSessionId。
+  · 插件：版本、路由、名字和称呼；stripHostPrompt 标注为已退休。
 
-同时从 bundles 里摘掉 @local/water-source。
+新增三个只读接口 /memory /home /plugin。
 
-附带：stripHostPrompt 可以退休了——从源头就不注入那句 coding agent。
+每页顶部一句说明（照 fish 的 TAB_HELP）。全页没有「性格 / 语气 / 人设」输入框。
+
+207 个测试。

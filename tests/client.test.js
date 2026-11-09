@@ -38,6 +38,13 @@ test('客户端 inject 含 slots，并注册 settings.section', () => {
   assert.ok(src.includes('ctx.slots.register'))
 })
 
+test('四个页签都在，且每个都有说明', () => {
+  for (const k of ['now', 'memory', 'home', 'plugin']) {
+    assert.ok(src.includes("['" + k + "'"), '缺页签 ' + k)
+    assert.ok(src.includes(k + ':'), '缺 TAB_HELP ' + k)
+  }
+})
+
 test('设置页里没有任何「改性格」的输入框', () => {
   // 红线：人格只能从事件里长出来，不能被配置出来。
   // 只查**代码与文案**，不查注释——注释里说「这里不写性格」是说明，不是控件。

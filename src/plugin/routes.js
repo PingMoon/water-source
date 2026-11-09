@@ -18,6 +18,7 @@
  *   把「造 handler」和「注册」分开，猜错时至少还能确定是哪一半。
  */
 
+import fs from 'node:fs'
 import { load as loadConfig, patch as patchConfig } from '../config.js'
 import { render } from '../assemble/sections.js'
 
@@ -90,6 +91,50 @@ export function createRoutesHandler(deps) {
           kept: r.kept,
           dropped: r.dropped,
           injected: r.text
+        })
+      }
+      // ---- 记忆页：只读 ----
+      if (p === '/memory' && req.method === 'GET') {
+        if (!whale?.db) return json(res, 503, { ok: false, why: '账本没打开' })
+        const all = whale.read({ includeForgotten: true })
+        const visible = whale.read()
+        const byType = {}
+        for (const e of visible) byType[e.type] = (byType[e.type] || 0) + 1
+        const her = all.filter((e) => e.type === 'utterance' && e.person === 'first').slice(-30).reverse()
+        const owner = all.filter((e) => e.type === 'utterance' && e.person === 'third').slice(-30).reverse()
+        const forgottenIds = new Set(all.filter((e) => e.type === 'tombstone').map((e) => e.refs?.[0]).filter(Boolean))
+        const forgotten = all.filter((e) => forgottenIds.has(e.id)).map((e) => ({ id: e.id, type: e.type, content: String(e.content ?? '').slice(0, 200), ts: e.ts }))
+        return json(res, 200, {
+          ok: true,
+          total: all.length,
+          visible: visible.length,
+          byType,
+          her: her.map((e) => ({ content: e.content, ts: e.ts })),
+          owner: owner.map((e) => ({ content: e.content, ts: e.ts })),
+          forgotten
+        })
+      }
+      // ---- 住所页：数据在哪 ----
+      if (p === '/home' && req.method === 'GET') {
+        const root = deps.root()
+        const cfg = loadConfig(root)
+        const size = (f) => { try { return fs.statSync(f).size } catch { return 0 } }
+        return json(res, 200, {
+          ok: true,
+          root,
+          db: { path: root + '/ledger.db', bytes: size(root + '/ledger.db'), walBytes: size(root + '/ledger.db-wal') },
+          config: cfg,
+          preset: 'lily'
+        })
+      }
+      // ---- 插件页：版本与路由 ----
+      if (p === '/plugin' && req.method === 'GET') {
+        return json(res, 200, {
+          ok: true,
+          version: deps.version?.() ?? '',
+          routes: ['/water-source/state', '/water-source/config', '/water-source/memory', '/water-source/home', '/water-source/plugin'],
+          preset: 'lily',
+          note: 'stripHostPrompt 已退休：preset 里 persona 的 prefix 已经是她了'
         })
       }
       return json(res, 404, { ok: false, why: '没有这个路由：' + p })
