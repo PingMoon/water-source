@@ -56,8 +56,19 @@ export function registerRoutes(webServer, deps) {
 
   const handler = async (req, res) => {
     const url = String(req.url ?? '')
+    // 诊断：每个进到这里的请求都写盘，确认路由到底通没通
+    try {
+      const os = await import('node:os')
+      const fs = await import('node:fs')
+      const pth = await import('node:path')
+      const dir = pth.join(os.homedir(), '.dsh')
+      fs.mkdirSync(dir, { recursive: true })
+      fs.appendFileSync(pth.join(dir, 'water-source-http.log'),
+        new Date().toISOString() + ' ' + String(req.method) + ' ' + url + '\n')
+    } catch { /* ignore */ }
     if (!url.startsWith(PREFIX)) { res.writeHead(404, { 'content-type': 'application/json' }); res.end('{"ok":false}'); return }
-    const p = url.slice(PREFIX.length).split('?')[0] || '/'
+    let p = url.slice(PREFIX.length).split('?')[0] || '/'
+    if (p === '' || p === '/') p = '/state'
     const whale = deps.getWhale()
     try {
       if (p === '/config' && req.method === 'GET') {

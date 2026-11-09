@@ -1,12 +1,13 @@
-fix(routes): 用 ctx.get('webServer') 取服务，并把注册结果写盘
+fix(routes): 路由其实注册成功了——加请求日志定位 404 真因
 
-404 还没解决。这轮做了两件事：
+诊断文件说话了：
+  05:06:38 webServer=null routeOk=false   ×4（早期几次 apply）
+  05:07:10 register=function routeOk=true ×1（最后一次成功）
 
-1. 取服务改成 Cordis 4 的方式 ctx.get('webServer')（照 fish 的 safeGet）。
-   直接写 ctx.webServer 可能是 undefined，而 registerRoutes 收到 null 就返回空函数——
-   日志照打「已注册」，请求一律 404。
+所以 404 不是注册失败，是请求没进 handler 或者进来了被我自己 404 掉。
 
-2. 注册结果写 ~/.dsh/water-source-route.log：webServer 有哪些键、register 是不是函数。
-   下次重启一眼能看到卡在哪一步，不用再猜。
+这轮加两样：
+  1. 每个进到 handler 的请求写 ~/.dsh/water-source-http.log
+  2. 根路径 / 回落到 /state（之前忘了处理）
 
-203 个测试。
+下次访问一下就看得到请求到底有没有到。
