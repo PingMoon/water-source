@@ -125,7 +125,7 @@ export function apply(ctx, config = {}) {
         text: () => {
           if (stopped || !whale?.db) return ''
           try {
-            return renderSections(whale.db, { name: herName, ownerName, now: Date.now() }).text
+            return renderSections(whale.db, { name: herName, ownerName, room: herSessionId, now: Date.now() }).text
           } catch (err) {
             log('装配失败：' + String(err?.message ?? err).slice(0, 120))
             return ''
@@ -182,7 +182,7 @@ export function apply(ctx, config = {}) {
 
   // ---- 自动 ingest：真人说的话自己进流水线 ----
   try {
-    const offIngest = registerIngest(ctx, { whale, log })
+    const offIngest = registerIngest(ctx, { whale, log, herSessionId })
     if (typeof offIngest === 'function') disposers.push(offIngest)
     log('已挂 session/event 观察者')
   } catch (err) {

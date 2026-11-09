@@ -85,6 +85,17 @@ export function roomOf(session) {
 export function registerIngest(ctx, deps = {}) {
   const whale = deps.whale
   const log = deps.log ?? (() => {})
+  /**
+   * 分会话开关。
+   *
+   * 填了 herSessionId，就只记那一间房的消息——主人跟别的 agent 说话，
+   * 不会混进她的账本。留空 = 不隔离（默认，方便第一次跑通）。
+   *
+   * 为什么要有：账本是她一个人的经历。别人的对话落进来，她就会
+   * 以为自己被那样说过（2026-11-09 实锤：主人对凛说的「可以」「清掉」
+   * 全进了她的账本）。
+   */
+  const herSessionId = String(deps.herSessionId ?? '')
   if (typeof ctx?.on !== 'function' || !whale) return () => {}
   const off = ctx.on('session/event', (session, event) => {
     try {
@@ -93,7 +104,9 @@ export function registerIngest(ctx, deps = {}) {
       if (classifyMessage(data) !== 'human') return
       const text = messageText(data)
       if (!text.trim()) return
-      const r = whale.ingest(text, { room: roomOf(session) })
+      const room = roomOf(session)
+      if (herSessionId && room !== herSessionId) return
+      const r = whale.ingest(text, { room })
       if (r.decision === 'drop') log('[whale] 丢了一条：' + r.why)
     } catch (err) {
       // 吞掉：记账出错不能连累她说话

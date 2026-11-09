@@ -33,9 +33,11 @@ const clip = (s, n) => {
  * @param {object} db
  * @param {{ name?:string, ownerName?:string, now?:number, limits?:object }} opts
  */
-export function buildSections(db, { name = '', ownerName = '', now = Date.now(), limits = {} } = {}) {
+export function buildSections(db, { name = '', ownerName = '', now = Date.now(), limits = {}, room = '' } = {}) {
   const L = { recent: 8, done: 5, ...limits }
-  const events = readEvents(db)
+  // room 有值 = 只读她那间房的事（seed 永远在，那是她的起点）
+  const all = readEvents(db)
+  const events = room ? all.filter((e) => e.type === 'seed' || e.meta?.room === room) : all
 
   const saidByOwner = events.filter((e) => e.type === 'utterance' && e.person === 'third').slice(-L.recent)
   const saidByHer = events.filter((e) => e.type === 'utterance' && e.person === 'first').slice(-L.recent)
