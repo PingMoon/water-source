@@ -18,7 +18,7 @@ import { createLlm } from '../llm/client.js'
 import { isHer, callerOf } from './caller.js'
 import { render as renderSections } from '../assemble/sections.js'
 import { load as loadConfig } from '../config.js'
-import { registerRoutes } from './routes.js'
+import { createRoutesHandler } from './routes.js'
 import { attachAssembleFix } from './assemble-fix.js'
 
 export const name = 'water-source'
@@ -200,56 +200,46 @@ export function apply(ctx, config = {}) {
   }
 
   // ---- 设置页的 JSON API ----
-  // ⚠ 服务要用 ctx.get('webServer') 取——照 dsh-fish 的 safeGet。
-  // 直接写 ctx.webServer 在 Cordis 4 里可能是 undefined，而且**静默**：
-  // registerRoutes 收到 null 就 return 空函数，日志照打「已注册」，请求一律 404。
+  // 诊断版：每一步都写盘，一次看清注册全过程。
   try {
+    const diagFile = () => {
+      const dir = path.join(os.homedir(), '.dsh')
+      mkdirSync(dir, { recursive: true })
+      return path.join(dir, 'water-source-route.log')
+    }
+    const note = (msg) => {
+      try { appendFileSync(diagFile(), new Date().toISOString() + ' ' + msg + '\n') } catch { /* ignore */ }
+    }
+
     let webServer = null
     try { webServer = typeof ctx.get === 'function' ? ctx.get('webServer') : null } catch { webServer = null }
     if (!webServer) webServer = ctx.webServer ?? null
-    log('webServer: ' + (webServer ? (typeof webServer.register) : '缺失'))
-    const offRoutes = registerRoutes(webServer, {
-      root: () => root,
-      getWhale: () => whale,
-      version: () => VERSION,
-      onConfigChanged: (next) => {
-        liveCfg = { ...liveCfg, ...next }
-        log('配置已更新：' + JSON.stringify(next))
-      },
-      log
-    })
-    if (typeof offRoutes === 'function') disposers.push(offRoutes)
-    const routeOk = Boolean(webServer?.register)
-    log('路由' + (routeOk ? '已注册' : '没注册（webServer.register 不存在）') + ': /water-source/{config,state}')
-    try {
-      const dir = path.join(os.homedir(), '.dsh')
-      mkdirSync(dir, { recursive: true })
-      // 注册之后 webServer 内部到底记了什么——这是决定性证据
-      let diag = ''
+    note('webServer=' + (webServer ? 'yes' : 'null') + ' register=' + typeof webServer?.register +
+      ' prefixesBefore=' + (webServer?.prefixes instanceof Map ? '[' + [...webServer.prefixes.keys()].join(',') + ']' : 'n/a'))
+
+    if (typeof webServer?.register === 'function') {
+      const handler = createRoutesHandler({
+        root: () => root,
+        getWhale: () => whale,
+        version: () => VERSION,
+        onConfigChanged: (next) => { liveCfg = { ...liveCfg, ...next }; log('配置已更新：' + JSON.stringify(next)) },
+        log
+      })
       try {
-        // 决定性自检：注册完之后，这个 webServer 自己认不认这条路由
-        try {
-          const m = typeof webServer?.match === 'function' ? webServer.match('/water-source/state') : undefined
-          diag += ' selfMatch=' + (m ? ('命中:' + String(m.path ?? '')) : '未命中')
-          if (webServer?.prefixes instanceof Map) diag += ' prefixesKeys=' + JSON.stringify([...webServer.prefixes.keys()])
-        } catch (e) { diag += ' selfMatch抛错:' + String(e?.message ?? e).slice(0, 60) }
-        const pf = webServer?.prefixes
-        const ex = webServer?.exact
-        const dump = (x) => {
-          if (!x) return String(x)
-          if (Array.isArray(x)) return 'arr[' + x.length + ']:' + JSON.stringify(x).slice(0, 600)
-          if (x instanceof Map) return 'map[' + x.size + ']:' + JSON.stringify([...x.keys()]).slice(0, 600)
-          if (typeof x === 'object') return 'obj:' + JSON.stringify(Object.keys(x)).slice(0, 400)
-          return String(x)
-        }
-        diag = ' prefixes=' + dump(pf) + ' exact=' + dump(ex)
-      } catch (e) { diag = ' dump失败:' + String(e?.message ?? e).slice(0, 80) }
-      appendFileSync(path.join(dir, 'water-source-route.log'),
-        new Date().toISOString() + ' webServer=' + (webServer ? 'yes' : 'null') +
-        ' register=' + typeof webServer?.register + ' routeOk=' + routeOk + diag + '\n')
-    } catch { /* ignore */ }
+        const d = webServer.register({ kind: 'prefix', path: '/water-source', handler })
+        const after = webServer?.prefixes instanceof Map ? '[' + [...webServer.prefixes.keys()].join(',') + ']' : 'n/a'
+        let m = 'n/a'
+        try { m = webServer.match?.('/water-source/state') ? 'hit' : 'miss' } catch (e) { m = 'throw:' + String(e?.message ?? e).slice(0, 40) }
+        note('register 返回=' + typeof d + ' prefixesAfter=' + after + ' selfMatch=' + m)
+        if (typeof d === 'function') disposers.push(d)
+      } catch (err) {
+        note('register 抛错: ' + String(err?.message ?? err).slice(0, 200))
+      }
+    } else {
+      note('webServer.register 不是函数，跳过')
+    }
   } catch (err) {
-    log('路由没挂上：' + String(err?.message ?? err).slice(0, 160))
+    log('路由块异常：' + String(err?.message ?? err).slice(0, 160))
   }
 
   // ---- 自动 ingest：真人说的话自己进流水线 ----

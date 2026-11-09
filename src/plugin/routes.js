@@ -11,16 +11,21 @@
  *   GET  /water-source/config  当前配置
  *   POST /water-source/config  改配置（白名单校验，改完立即生效）
  *
- * 不提供：读账本原文、删事件、改人格。那是 B 的红线。
+ * 不提供：读账本原文、删事件、改人格。那是红线。
+ *
+ * ⚠ 注册那一段在 index.js 里内联做（带逐步诊断）：宿主 register 的调用形状
+ *   太容易猜错，而且猜错**静默**——插件照常启动、日志照打，请求一律 404。
+ *   把「造 handler」和「注册」分开，猜错时至少还能确定是哪一半。
  */
 
 import { load as loadConfig, patch as patchConfig } from '../config.js'
 import { render } from '../assemble/sections.js'
 
-const PREFIX = '/water-source'
+export const PREFIX = '/water-source'
 
 function json(res, code, body) {
   try {
+    if (res.writableEnded) return
     res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
     res.end(JSON.stringify(body))
   } catch { /* 连接断了就算了 */ }
@@ -41,39 +46,26 @@ async function readBody(req, limit = 64 * 1024) {
 }
 
 /**
- * 注册路由。
- * @param {object} webServer 宿主的 webServer（有 route / addRoute 都认）
- * @param {{ getWhale:()=>object|null, log:Function }} deps
- * @returns {() => void} 注销
+ * 只造 handler，不碰注册。
+ * @param {{ root:()=>string, getWhale:()=>object|null, version:()=>string, onConfigChanged?:Function, log:Function }} deps
+ * @returns {(req:object, res:object) => Promise<void>}
  */
-export function registerRoutes(webServer, deps) {
-  if (!webServer) return () => {}
-  // ⚠ 宿主的形状是 register({ kind, path, handler })——不是 register(path, handler)。
-  // 2026-11-09 踩过：写成 route/addRoute 全都不存在，注册静默不报错，请求一律 404。
-  // 判据照 dsh-fish observe.js:2213。
-  const add = webServer.register
-  if (typeof add !== 'function') return () => {}
+export function createRoutesHandler(deps) {
+  const log = deps.log ?? (() => {})
 
-  const handler = async (req, res) => {
+  return async function handler(req, res) {
     const url = String(req.url ?? '')
-    // 诊断：每个进到这里的请求都写盘，确认路由到底通没通
-    try {
-      const os = await import('node:os')
-      const fs = await import('node:fs')
-      const pth = await import('node:path')
-      const dir = pth.join(os.homedir(), '.dsh')
-      fs.mkdirSync(dir, { recursive: true })
-      fs.appendFileSync(pth.join(dir, 'water-source-http.log'),
-        new Date().toISOString() + ' ' + String(req.method) + ' ' + url + '\n')
-    } catch { /* ignore */ }
-    if (!url.startsWith(PREFIX)) { res.writeHead(404, { 'content-type': 'application/json' }); res.end('{"ok":false}'); return }
-    let p = url.slice(PREFIX.length).split('?')[0] || '/'
+    let p = url.startsWith(PREFIX) ? (url.slice(PREFIX.length).split('?')[0] || '/') : url.split('?')[0]
     if (p === '' || p === '/') p = '/state'
+
     const whale = deps.getWhale()
     try {
       if (p === '/config' && req.method === 'GET') {
-        const root = deps.root()
-        return json(res, 200, { ok: true, config: loadConfig(root), editable: ['herName', 'ownerName', 'herSessionId', 'stripHostPrompt'] })
+        return json(res, 200, {
+          ok: true,
+          config: loadConfig(deps.root()),
+          editable: ['herName', 'ownerName', 'herSessionId', 'stripHostPrompt']
+        })
       }
       if (p === '/config' && req.method === 'POST') {
         const raw = await readBody(req)
@@ -81,7 +73,7 @@ export function registerRoutes(webServer, deps) {
         try { body = JSON.parse(raw) } catch { return json(res, 400, { ok: false, why: '不是合法 JSON' }) }
         const r = patchConfig(deps.root(), body ?? {})
         if (!r.ok) return json(res, 400, { ok: false, why: r.why })
-        deps.onConfigChanged?.(r.value)
+        try { deps.onConfigChanged?.(r.value) } catch { /* ignore */ }
         return json(res, 200, { ok: true, config: r.value })
       }
       if (p === '/state' && req.method === 'GET') {
@@ -91,7 +83,7 @@ export function registerRoutes(webServer, deps) {
         const r = render(whale.db, { name: cfg.herName, ownerName: cfg.ownerName, room: cfg.herSessionId })
         return json(res, 200, {
           ok: true,
-          version: deps.version(),
+          version: deps.version?.() ?? '',
           events: events.length,
           byType: events.reduce((m, e) => { m[e.type] = (m[e.type] || 0) + 1; return m }, {}),
           budget: { used: r.used, total: 2400 },
@@ -100,21 +92,28 @@ export function registerRoutes(webServer, deps) {
           injected: r.text
         })
       }
-      return json(res, 404, { ok: false, why: '没有这个路由' })
+      return json(res, 404, { ok: false, why: '没有这个路由：' + p })
     } catch (err) {
-      deps.log('路由失败 ' + p + '：' + String(err?.message ?? err).slice(0, 160))
+      log('路由失败 ' + p + '：' + String(err?.message ?? err).slice(0, 160))
       return json(res, 500, { ok: false, why: String(err?.message ?? err).slice(0, 200) })
     }
   }
+}
 
+/**
+ * 兼容旧调用：造 handler + 注册。
+ * 注册形状照 dsh-host-webserver 的 register(route)：
+ *   { kind: 'prefix' | 'exact', path, handler }，handler 是 Node 原生 (req, res)。
+ */
+export function registerRoutes(webServer, deps) {
+  if (!webServer || typeof webServer.register !== 'function') return () => {}
+  const handler = createRoutesHandler(deps)
   let off
   try {
-    off = add({ kind: 'prefix', path: PREFIX, handler })
+    off = webServer.register({ kind: 'prefix', path: PREFIX, handler })
   } catch (err) {
-    deps.log('路由注册失败：' + String(err?.message ?? err).slice(0, 160))
+    deps.log?.('路由注册失败：' + String(err?.message ?? err).slice(0, 160))
     return () => {}
   }
-  if (typeof off === 'function') return off
-  if (off && typeof off.dispose === 'function') return () => off.dispose()
-  return () => {}
+  return typeof off === 'function' ? off : () => {}
 }
