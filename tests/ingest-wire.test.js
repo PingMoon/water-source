@@ -66,7 +66,8 @@ test('没有时区的 user 消息：宁可不记', () => {
 test('噪音被丢弃，但不进账本（丢弃记录在 eval_drop）', () => {
   const { w, dir, emit } = harness()
   try {
-    emit({ id: 's1' }, { type: 'user/message', data: { text: '嗯嗯', source: { kind: 'user', clientTimeZone: 'Asia/Shanghai' } } })
+    // 2026-11-09：语气词不再算噪音，改用纯标点
+    emit({ id: 's1' }, { type: 'user/message', data: { text: '。。。', source: { kind: 'user', clientTimeZone: 'Asia/Shanghai' } } })
     assert.equal(w.read({ types: ['utterance'] }).length, 0)
     assert.equal(w.drops().length, 1)
   } finally { w.close(); rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) }
